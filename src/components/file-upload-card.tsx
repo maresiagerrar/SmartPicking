@@ -2,10 +2,10 @@
 "use client";
 
 import { useState, useRef, type ChangeEvent, type DragEvent } from 'react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { FileText, FileSpreadsheet, UploadCloud, Loader2, CheckCircle2 } from 'lucide-react';
+import { FileText, FileSpreadsheet, CheckCircle2, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from "@/hooks/use-toast";
 
@@ -97,10 +97,10 @@ function FileUploadArea({ icon, title, acceptedFiles, file, setFile, id }: FileU
           <Button variant="link" size="sm" className="mt-2 text-green-700 dark:text-green-400" onClick={(e) => { e.stopPropagation(); setFile(null)}}>Remover</Button>
         </div>
       ) : (
-        <div className="text-center text-muted-foreground">
+        <div className="text-center text-muted-foreground flex flex-col items-center">
           {icon}
-          <p className="mt-2 font-semibold text-lg">{title}</p>
-          <p className="text-sm">Arraste e solte ou clique para selecionar</p>
+          <p className="mt-4 font-semibold text-lg">{title}</p>
+          <p className="text-sm mt-1">Arraste e solte ou clique para selecionar</p>
         </div>
       )}
     </div>
@@ -132,7 +132,7 @@ export default function FileUploadCard({ onProcess, isLoading }: FileUploadCardP
       <CardContent className="grid md:grid-cols-2 gap-6">
         <FileUploadArea
           id="txt-upload"
-          icon={<FileText className="w-12 h-12" style={{ color: '#FFCC00' }} />}
+          icon={<FileText className="w-12 h-12 mx-auto" style={{ color: '#FFCC00' }} />}
           title="TARJA"
           acceptedFiles=".txt"
           file={txtFile}
@@ -140,7 +140,7 @@ export default function FileUploadCard({ onProcess, isLoading }: FileUploadCardP
         />
         <FileUploadArea
           id="excel-upload"
-          icon={<FileSpreadsheet className="w-12 h-12" style={{ color: '#FFCC00' }} />}
+          icon={<FileSpreadsheet className="w-12 h-12 mx-auto" style={{ color: '#FFCC00' }} />}
           title="VL06O"
           acceptedFiles=".xlsx,.xlsm"
           file={excelFile}
