@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { RotateCcw, X, ChevronDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { RotateCcw, X, ChevronDown, ArrowUp, ArrowDown, FileDown } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   DropdownMenu,
@@ -16,6 +16,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import { cn } from '@/lib/utils';
+import * as xlsx from 'xlsx';
 
 
 interface GeneratedTableProps {
@@ -45,6 +46,42 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
 
   const requestSort = (key: keyof DataRow, direction: SortDirection) => {
     setSortConfig({ key, direction });
+  };
+
+  const handleExport = () => {
+    const header = [
+      "REMESSA",
+      "DATA",
+      "BR",
+      "CIDADE",
+      "CLIENTE",
+      "ORDEM",
+      "QTD ETIQUETA",
+      "SEQUÊNCIA",
+    ];
+
+    const body = sortedAndFilteredData.map(row => ({
+      "REMESSA": row.remessa,
+      "DATA": row.data,
+      "BR": row.br,
+      "CIDADE": row.cidade,
+      "CLIENTE": row.cliente,
+      "ORDEM": row.ordem,
+      "QTD ETIQUETA": row.qtdEtiqueta,
+      "SEQUÊNCIA": row.sequencia
+    }));
+    
+    const worksheet = xlsx.utils.json_to_sheet(body, { header: header });
+    const workbook = xlsx.utils.book_new();
+    xlsx.utils.book_append_sheet(workbook, worksheet, "Dados");
+
+    // Auto-size columns
+    const cols = Object.keys(body[0] || header).map(key => ({
+        wch: body.reduce((w, r) => Math.max(w, String(r[key as keyof typeof r]).length), key.length) + 2
+    }));
+    worksheet["!cols"] = cols;
+
+    xlsx.writeFile(workbook, "relatorio_smart_picking.xlsx");
   };
 
   const sortedAndFilteredData = useMemo(() => {
@@ -148,6 +185,10 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
           </CardDescription>
         </div>
         <div className="flex items-center gap-2">
+            <Button onClick={handleExport} variant="outline" size="sm" disabled={sortedAndFilteredData.length === 0}>
+                <FileDown className="mr-2 h-4 w-4" />
+                Exportar para Excel
+            </Button>
             <Button onClick={clearFilters} variant="outline" size="sm" disabled={Object.values(filters).every(v => !v) && !sortConfig}>
                 <X className="mr-2 h-4 w-4" />
                 Limpar Filtros & Ordem
