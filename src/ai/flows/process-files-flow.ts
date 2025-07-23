@@ -24,7 +24,7 @@ const DataRowSchema = z.object({
   cidade: z.string(),
   cliente: z.string(),
   ordem: z.string(),
-  qtdEtiqueta: z.number(),
+  qtdEtiqueta: z.union([z.number(), z.string()]),
   sequencia: z.string(),
 });
 
@@ -33,7 +33,7 @@ export type ProcessFilesOutput = z.infer<typeof ProcessFilesOutputSchema>;
 
 export async function processFiles(input: ProcessFilesInput): Promise<ProcessFilesOutput> {
     // 1. Parse TXT file
-    const txtData: Omit<DataRow, 'cidade' | 'cliente' | 'sequencia'>[] = [];
+    const txtData: Omit<DataRow, 'cidade' | 'cliente' | 'sequencia' | 'qtdEtiqueta'>[] & { qtdEtiqueta: number } = [];
     const txtLines = input.txtContent.split(/\r?\n/);
     
     txtLines.forEach(line => {
@@ -131,7 +131,7 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
       "BR442706": "ITAPEVA",
     };
 
-    txtData.forEach(txtItem => {
+    txtData.forEach((txtItem, index) => {
       const excelItem = excelData.find(excel => excel.remessa === txtItem.remessa);
       
       const qtdEtiquetas = txtItem.qtdEtiqueta > 0 ? txtItem.qtdEtiqueta : 1;
@@ -156,6 +156,21 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
         mergedData.push({
             ...baseItem,
             sequencia: sequencia,
+        });
+      }
+
+      // Check if the next item has a different BR code
+      const nextTxtItem = txtData[index + 1];
+      if (nextTxtItem && nextTxtItem.br !== txtItem.br) {
+        mergedData.push({
+            remessa: '',
+            data: '',
+            br: 'ATENÇÃO',
+            cidade: '',
+            cliente: `PROXIMO ${nextTxtItem.br}`,
+            ordem: '',
+            qtdEtiqueta: '',
+            sequencia: '',
         });
       }
     });

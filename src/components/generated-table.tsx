@@ -92,6 +92,9 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
       processableData = processableData.filter((row) => {
         return activeFilters.every(([key, value]) => {
           const rowValue = row[key as keyof DataRow];
+          if (row.br === 'ATENÇÃO' && key !== 'br' && key !== 'cliente') {
+            return true; // Don't filter attention rows on most columns
+          }
           return String(rowValue).toLowerCase().includes(String(value).toLowerCase());
         });
       });
@@ -100,6 +103,11 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
     // Sorting
     if (sortConfig !== null) {
       processableData.sort((a, b) => {
+        // Keep "ATENÇÃO" rows in their relative positions after the group they follow
+        if (a.br === 'ATENÇÃO' || b.br === 'ATENÇÃO') {
+            return 0;
+        }
+
         const aValue = a[sortConfig.key];
         const bValue = b[sortConfig.key];
 
@@ -213,7 +221,13 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
             <TableBody>
               {sortedAndFilteredData.length > 0 ? (
                 sortedAndFilteredData.map((row, index) => (
-                  <TableRow key={index} className="hover:bg-muted/50">
+                  <TableRow 
+                    key={index} 
+                    className={cn(
+                      "hover:bg-muted/50",
+                      row.br === 'ATENÇÃO' && 'bg-yellow-200/50 dark:bg-yellow-800/50 font-bold'
+                    )}
+                  >
                     <TableCell>{row.remessa}</TableCell>
                     <TableCell>{row.data}</TableCell>
                     <TableCell>{row.br}</TableCell>
