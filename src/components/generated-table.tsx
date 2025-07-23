@@ -12,6 +12,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import { cn } from '@/lib/utils';
 
@@ -41,11 +42,7 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
     setSortConfig(null);
   }
 
-  const requestSort = (key: keyof DataRow) => {
-    let direction: SortDirection = 'ascending';
-    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
-      direction = 'descending';
-    }
+  const requestSort = (key: keyof DataRow, direction: SortDirection) => {
     setSortConfig({ key, direction });
   };
 
@@ -90,8 +87,7 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
   }, [data, filters, sortConfig]);
 
   const HeaderCell = ({ column, label }: { column: keyof DataRow, label: string }) => (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center justify-between gap-2">
+    <div className="flex items-center gap-2">
         <span className="font-semibold">{label}</span>
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -100,28 +96,28 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
                     <span className="sr-only">Opções da coluna</span>
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => requestSort(column)}>
+            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                <div className="p-2">
+                  <Input
+                    type="search"
+                    placeholder={`Buscar em ${label}...`}
+                    className="w-full h-8 pl-4 pr-2 text-xs"
+                    value={filters[column] || ''}
+                    onChange={(e) => handleFilterChange(column, e.target.value)}
+                    aria-label={`Filter by ${column}`}
+                  />
+                </div>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => requestSort(column, 'ascending')}>
                     <ArrowUp className="mr-2 h-4 w-4" />
-                    Ordenar A-Z
+                    Ordenar Crescente
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => requestSort(column)}>
+                <DropdownMenuItem onClick={() => requestSort(column, 'descending')}>
                     <ArrowDown className="mr-2 h-4 w-4" />
-                    Ordenar Z-A
+                    Ordenar Decrescente
                 </DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>
-      </div>
-      <div className="relative">
-        <Input
-          type="search"
-          placeholder={`Buscar...`}
-          className="w-full h-8 pl-4 pr-2 text-xs"
-          value={filters[column] || ''}
-          onChange={(e) => handleFilterChange(column, e.target.value)}
-          aria-label={`Filter by ${column}`}
-        />
-      </div>
     </div>
   );
 
@@ -150,14 +146,14 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
           <Table>
             <TableHeader className="sticky top-0 bg-card z-10 shadow-sm">
               <TableRow>
-                <TableHead className="align-top"><HeaderCell column="remessa" label="REMESSA"/></TableHead>
-                <TableHead className="align-top"><HeaderCell column="data" label="DATA"/></TableHead>
-                <TableHead className="align-top"><HeaderCell column="br" label="BR" /></TableHead>
-                <TableHead className="align-top"><HeaderCell column="cidade" label="CIDADE"/></TableHead>
-                <TableHead className="align-top"><HeaderCell column="cliente" label="CLIENTE"/></TableHead>
-                <TableHead className="align-top"><HeaderCell column="ordem" label="ORDEM"/></TableHead>
-                <TableHead className="align-top"><HeaderCell column="qtdEtiqueta" label="QTD ETIQUETA"/></TableHead>
-                <TableHead className="align-top"><HeaderCell column="sequencia" label="SEQUÊNCIA"/></TableHead>
+                <TableHead><HeaderCell column="remessa" label="REMESSA"/></TableHead>
+                <TableHead><HeaderCell column="data" label="DATA"/></TableHead>
+                <TableHead><HeaderCell column="br" label="BR" /></TableHead>
+                <TableHead><HeaderCell column="cidade" label="CIDADE"/></TableHead>
+                <TableHead><HeaderCell column="cliente" label="CLIENTE"/></TableHead>
+                <TableHead><HeaderCell column="ordem" label="ORDEM"/></TableHead>
+                <TableHead><HeaderCell column="qtdEtiqueta" label="QTD ETIQUETA"/></TableHead>
+                <TableHead><HeaderCell column="sequencia" label="SEQUÊNCIA"/></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
