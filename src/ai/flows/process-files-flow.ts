@@ -25,7 +25,7 @@ const DataRowSchema = z.object({
   cliente: z.string(),
   ordem: z.string(),
   qtdEtiqueta: z.number(),
-  sequencia: z.number(),
+  sequencia: z.string(),
 });
 
 const ProcessFilesOutputSchema = z.array(DataRowSchema);
@@ -33,7 +33,7 @@ export type ProcessFilesOutput = z.infer<typeof ProcessFilesOutputSchema>;
 
 export async function processFiles(input: ProcessFilesInput): Promise<ProcessFilesOutput> {
     // 1. Parse TXT file
-    const txtData: Omit<DataRow, 'cidade' | 'cliente'>[] = [];
+    const txtData: Omit<DataRow, 'cidade' | 'cliente' | 'sequencia'>[] = [];
     const txtLines = input.txtContent.split(/\r?\n/);
     
     txtLines.forEach(line => {
@@ -89,7 +89,7 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
           }
         }
         
-        txtData.push({ remessa, data, br, ordem, qtdEtiqueta, sequencia: 0 }); // Sequence will be updated later
+        txtData.push({ remessa, data, br, ordem, qtdEtiqueta });
       }
     });
 
@@ -126,22 +126,47 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
 
     txtData.forEach(txtItem => {
       const excelItem = excelData.find(excel => excel.remessa === txtItem.remessa);
-      if (excelItem) {
-        mergedData.push({
-          ...txtItem,
-          cidade: excelItem.cidade, 
-          cliente: excelItem.cliente,
-          sequencia: sequenceCounter++,
-        });
-      } else {
-         mergedData.push({
-          ...txtItem,
-          cidade: 'N/A',
-          cliente: 'N/A',
-          sequencia: sequenceCounter++,
-        });
+      
+      const qtdEtiquetas = txtItem.qtdEtiqueta > 0 ? txtItem.qtdEtiqueta : 1;
+      
+      for (let i = 0; i < qtdEtiquetas; i++) {
+        const baseItem = {
+            ...txtItem,
+            cidade: excelItem?.cidade || 'N/A',
+            cliente: excelItem?.cliente || 'N/A',
+        };
+
+        if (txtItem.qtdEtiqueta > 1) {
+             mergedData.push({
+                ...baseItem,
+                sequencia: `${String(i + 1).padStart(2, '0')}/${String(txtItem.qtdEtiqueta).padStart(2, '0')}`,
+            });
+        } else {
+             mergedData.push({
+                ...baseItem,
+                sequencia: String(sequenceCounter++),
+            });
+        }
       }
+
+       if (txtItem.qtdEtiqueta <= 1) {
+          // handles items that are not multi-label
+       } else {
+         sequenceCounter += txtItem.qtdEtiqueta;
+       }
     });
     
-    return mergedData;
+    // Create a new array and re-calculate sequence for non-multi-label items
+    const finalData: DataRow[] = [];
+    let singleItemSequence = 1;
+    for(const item of mergedData) {
+        if (!item.sequencia.includes('/')) {
+            finalData.push({ ...item, sequencia: String(singleItemSequence++) });
+        } else {
+            finalData.push(item);
+        }
+    }
+
+
+    return finalData;
 }

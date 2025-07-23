@@ -6,5 +6,5 @@ export type DataRow = {
   cliente: string;
   ordem: string;
   qtdEtiqueta: number;
-  sequencia: number;
+  sequencia: string;
 };

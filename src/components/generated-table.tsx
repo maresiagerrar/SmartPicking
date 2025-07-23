@@ -1,6 +1,6 @@
 
 "use client";
-import { useState, useMemo, KeyboardEvent } from 'react';
+import { useState, useMemo, KeyboardEvent, useEffect } from 'react';
 import type { DataRow } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -74,7 +74,7 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
             return 0;
         }
 
-        // Handle string comparison
+        // Handle string comparison (including formatted sequence)
         if (typeof aValue === 'string' && typeof bValue === 'string') {
             const comparison = aValue.localeCompare(bValue, 'pt-BR', { numeric: true });
             return sortConfig.direction === 'ascending' ? comparison : -comparison;
@@ -86,22 +86,20 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
 
     return processableData;
   }, [data, filters, sortConfig]);
-
+  
   const HeaderCell = ({ column, label }: { column: keyof DataRow, label: string }) => {
     const [inputValue, setInputValue] = useState(filters[column] || '');
 
     const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
             handleFilterChange(column, inputValue);
-            // Optionally close dropdown here if needed, but for now let's keep it open
-            // (e.target as HTMLElement).closest('[data-radix-dropdown-menu-content]')?.
         }
     };
     
-    // Sync local input with global filter state if cleared
-    useState(() => {
+    useEffect(() => {
         setInputValue(filters[column] || '');
-    });
+    }, [filters, column]);
+
 
     return (
     <div className="flex items-center gap-2">
