@@ -122,51 +122,30 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
 
     // 3. Merge data
     const mergedData: DataRow[] = [];
-    let sequenceCounter = 1;
 
     txtData.forEach(txtItem => {
       const excelItem = excelData.find(excel => excel.remessa === txtItem.remessa);
       
       const qtdEtiquetas = txtItem.qtdEtiqueta > 0 ? txtItem.qtdEtiqueta : 1;
+      const totalEtiquetasString = String(qtdEtiquetas).padStart(2, '0');
       
       for (let i = 0; i < qtdEtiquetas; i++) {
         const baseItem = {
             ...txtItem,
             cidade: excelItem?.cidade || 'N/A',
             cliente: excelItem?.cliente || 'N/A',
+            // Ensure qtdEtiqueta is always at least 1 for display
+            qtdEtiqueta: qtdEtiquetas,
         };
+        
+        const sequencia = `${String(i + 1).padStart(2, '0')}/${totalEtiquetasString}`;
 
-        if (txtItem.qtdEtiqueta > 1) {
-             mergedData.push({
-                ...baseItem,
-                sequencia: `${String(i + 1).padStart(2, '0')}/${String(txtItem.qtdEtiqueta).padStart(2, '0')}`,
-            });
-        } else {
-             mergedData.push({
-                ...baseItem,
-                sequencia: String(sequenceCounter++),
-            });
-        }
+        mergedData.push({
+            ...baseItem,
+            sequencia: sequencia,
+        });
       }
-
-       if (txtItem.qtdEtiqueta <= 1) {
-          // handles items that are not multi-label
-       } else {
-         sequenceCounter += txtItem.qtdEtiqueta;
-       }
     });
-    
-    // Create a new array and re-calculate sequence for non-multi-label items
-    const finalData: DataRow[] = [];
-    let singleItemSequence = 1;
-    for(const item of mergedData) {
-        if (!item.sequencia.includes('/')) {
-            finalData.push({ ...item, sequencia: String(singleItemSequence++) });
-        } else {
-            finalData.push(item);
-        }
-    }
 
-
-    return finalData;
+    return mergedData;
 }
