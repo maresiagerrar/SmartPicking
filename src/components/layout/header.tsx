@@ -28,7 +28,7 @@ export default function Header() {
             </defs>
           </svg>
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold font-headline">
+            <h1 className="text-2xl md:text-3xl font-bold font-headline dark:text-black">
               Smart Picking
             </h1>
           </div>
