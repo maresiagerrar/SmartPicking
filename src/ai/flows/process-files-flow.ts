@@ -33,7 +33,7 @@ export type ProcessFilesOutput = z.infer<typeof ProcessFilesOutputSchema>;
 
 export async function processFiles(input: ProcessFilesInput): Promise<ProcessFilesOutput> {
     // 1. Parse TXT file
-    const txtData: Omit<DataRow, 'br' | 'cidade' | 'cliente'>[] = [];
+    const txtData: Omit<DataRow, 'cidade' | 'cliente'>[] = [];
     const txtLines = input.txtContent.split(/\r?\n/);
     
     txtLines.forEach(line => {
@@ -44,10 +44,21 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
         
         let linha = 'N/A';
         let qtdEtiqueta = 0;
+        let br = 'N/A';
 
         const remessaLineIndex = txtLines.findIndex(l => l.trim() === line.trim());
 
         if (remessaLineIndex !== -1) {
+
+          // Find "CE" line to get BR
+          if (txtLines[remessaLineIndex + 1] && txtLines[remessaLineIndex + 1].includes('CE ')) {
+            const ceParts = txtLines[remessaLineIndex + 1].split(/\s+/);
+            const brPart = ceParts.find(p => p.startsWith('BR'));
+            if(brPart) {
+               br = brPart;
+            }
+          }
+          
           // Find "Linha :" two lines below
           if (txtLines[remessaLineIndex + 2] && txtLines[remessaLineIndex + 2].includes('Linha :')) {
             const linhaParts = txtLines[remessaLineIndex + 2].split('Linha :');
@@ -73,12 +84,12 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
           }
         }
         
-        txtData.push({ remessa, data, linha, qtdEtiqueta, sequencia: 0 }); // Sequence will be updated later
+        txtData.push({ remessa, data, br, linha, qtdEtiqueta, sequencia: 0 }); // Sequence will be updated later
       }
     });
 
     // 2. Parse Excel file
-    const excelData: Pick<DataRow, 'remessa' | 'br' | 'cidade' | 'cliente'>[] = [];
+    const excelData: Pick<DataRow, 'remessa' | 'cidade' | 'cliente'>[] = [];
     try {
         const workbook = xlsx.read(Buffer.from(input.excelContent, 'base64'), { type: 'buffer' });
         const sheetName = workbook.SheetNames[0];
@@ -87,16 +98,15 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
 
         jsonSheet.forEach((row: any) => {
           const remessa = row[0]; // Column A
-          const br = row[10];      // Column K
-          const cidade = row[11];   // Column L
-          const cliente = row[12];  // Column M
+          const brColumn = row[10];      // Column K
+          const cidadeColumn = row[11];   // Column L
+          const clienteColumn = row[12];  // Column M
     
-          if (remessa && (br || cidade || cliente)) {
+          if (remessa && (brColumn || cidadeColumn || clienteColumn)) {
             excelData.push({
               remessa: String(remessa).trim(),
-              br: br ? String(br) : 'N/A',
-              cidade: cidade ? String(cidade) : 'N/A',
-              cliente: cliente ? String(cliente) : 'N/A',
+              cidade: brColumn ? String(brColumn) : 'N/A',
+              cliente: cidadeColumn ? String(cidadeColumn) : 'N/A',
             });
           }
         });
@@ -115,15 +125,13 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
       if (excelItem) {
         mergedData.push({
           ...txtItem,
-          br: 'N/A', // This column is not displayed in the final table based on the image.
-          cidade: excelItem.br, // Column K (BR in Excel) goes to "Cidade"
-          cliente: excelItem.cidade, // Column L (Cidade in Excel) goes to "Cliente"
+          cidade: excelItem.cidade, // Column K (BR in Excel) goes to "Cidade"
+          cliente: excelItem.cliente, // Column L (Cidade in Excel) goes to "Cliente"
           sequencia: sequenceCounter++,
         });
       } else {
          mergedData.push({
           ...txtItem,
-          br: 'N/A',
           cidade: 'N/A',
           cliente: 'N/A',
           sequencia: sequenceCounter++,
