@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 import { useToast } from "@/hooks/use-toast";
 
 interface FileUploadCardProps {
-  onProcess: () => void;
+  onProcess: (txtFile: File, excelFile: File) => void;
   isLoading: boolean;
 }
 
@@ -30,8 +30,8 @@ function FileUploadArea({ icon, title, acceptedFiles, file, setFile, id }: FileU
   const handleFileChange = (files: FileList | null) => {
     if (files && files.length > 0) {
       const selectedFile = files[0];
-      const fileExtension = "." + selectedFile.name.split('.').pop();
-      if (!acceptedFiles.includes(fileExtension!)) {
+      const fileExtension = "." + selectedFile.name.split('.').pop()?.toLowerCase();
+      if (!acceptedFiles.split(',').includes(fileExtension!)) {
         toast({
           title: "Tipo de arquivo inválido",
           description: `Por favor, selecione um arquivo do tipo: ${acceptedFiles}`,
@@ -120,7 +120,7 @@ export default function FileUploadCard({ onProcess, isLoading }: FileUploadCardP
       });
       return;
     }
-    onProcess();
+    onProcess(txtFile, excelFile);
   };
 
   return (
