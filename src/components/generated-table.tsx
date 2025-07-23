@@ -39,16 +39,19 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
     });
   }, [data, filters]);
 
-  const FilterInput = ({ column }: { column: keyof DataRow }) => (
-    <div className="relative">
-      <Input
-        type="search"
-        placeholder={`Buscar ${column}...`}
-        className="w-full h-8 pl-4 pr-2 text-xs"
-        value={filters[column] || ''}
-        onChange={(e) => handleFilterChange(column, e.target.value)}
-        aria-label={`Filter by ${column}`}
-      />
+  const FilterInput = ({ column, label }: { column: keyof DataRow, label: string }) => (
+    <div className="flex flex-col gap-2">
+       <span className="font-semibold">{label}</span>
+      <div className="relative">
+        <Input
+          type="search"
+          placeholder={`Buscar...`}
+          className="w-full h-8 pl-4 pr-2 text-xs"
+          value={filters[column] || ''}
+          onChange={(e) => handleFilterChange(column, e.target.value)}
+          aria-label={`Filter by ${column}`}
+        />
+      </div>
     </div>
   );
 
@@ -77,14 +80,14 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
           <Table>
             <TableHeader className="sticky top-0 bg-card z-10 shadow-sm">
               <TableRow>
-                <TableHead className="font-semibold align-top"><div className="pb-2">REMESSA</div><FilterInput column="remessa" /></TableHead>
-                <TableHead className="font-semibold align-top"><div className="pb-2">DATA</div><FilterInput column="data" /></TableHead>
-                <TableHead className="font-semibold align-top"><div className="pb-2">BR</div><FilterInput column="br" /></TableHead>
-                <TableHead className="font-semibold align-top"><div className="pb-2">CIDADE</div><FilterInput column="cidade" /></TableHead>
-                <TableHead className="font-semibold align-top"><div className="pb-2">CLIENTE</div><FilterInput column="cliente" /></TableHead>
-                <TableHead className="font-semibold align-top"><div className="pb-2">ORDEM</div><FilterInput column="ordem" /></TableHead>
-                <TableHead className="font-semibold align-top"><div className="pb-2">QTD DE ETIQUETA</div><FilterInput column="qtdEtiqueta" /></TableHead>
-                <TableHead className="font-semibold align-top"><div className="pb-2">SEQUÊNCIA</div><FilterInput column="sequencia" /></TableHead>
+                <TableHead className="align-top"><FilterInput column="remessa" label="REMESSA"/></TableHead>
+                <TableHead className="align-top"><FilterInput column="data" label="DATA"/></TableHead>
+                <TableHead className="align-top"><FilterInput column="br" label="BR" /></TableHead>
+                <TableHead className="align-top"><FilterInput column="cidade" label="CIDADE"/></TableHead>
+                <TableHead className="align-top"><FilterInput column="cliente" label="CLIENTE"/></TableHead>
+                <TableHead className="align-top"><FilterInput column="ordem" label="ORDEM"/></TableHead>
+                <TableHead className="align-top"><FilterInput column="qtdEtiqueta" label="QTD DE ETIQUETA"/></TableHead>
+                <TableHead className="align-top"><FilterInput column="sequencia" label="SEQUÊNCIA"/></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
