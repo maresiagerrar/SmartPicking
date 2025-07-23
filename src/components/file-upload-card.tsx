@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useRef, type ChangeEvent, type DragEvent } from 'react';
@@ -135,7 +136,7 @@ export default function FileUploadCard({ onProcess, isLoading }: FileUploadCardP
         <FileUploadArea
           id="txt-upload"
           icon={<FileText className="w-12 h-12" style={{ color: '#FFCC00' }} />}
-          title="Arquivo de Texto"
+          title="TARJA"
           acceptedFiles=".txt"
           file={txtFile}
           setFile={setTxtFile}
@@ -143,14 +144,14 @@ export default function FileUploadCard({ onProcess, isLoading }: FileUploadCardP
         <FileUploadArea
           id="excel-upload"
           icon={<FileSpreadsheet className="w-12 h-12" style={{ color: '#FFCC00' }} />}
-          title="Arquivo Excel"
+          title="VL06O"
           acceptedFiles=".xlsx,.xlsm"
           file={excelFile}
           setFile={setExcelFile}
         />
       </CardContent>
       <CardFooter>
-        <Button onClick={handleProcessClick} disabled={isLoading || !txtFile || !excelFile} className="w-full md:w-auto ml-auto" size="lg" variant="destructive">
+        <Button onClick={handleProcessClick} disabled={isLoading || !txtFile || !excelFile} className="w-full md:w-auto ml-auto" size="lg" style={{ backgroundColor: '#D40511' }}>
           {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
