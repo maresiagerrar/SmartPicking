@@ -115,7 +115,9 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
       if (excelItem) {
         mergedData.push({
           ...txtItem,
-          ...excelItem,
+          br: 'N/A', // This column is not displayed in the final table based on the image.
+          cidade: excelItem.br, // Column K (BR in Excel) goes to "Cidade"
+          cliente: excelItem.cidade, // Column L (Cidade in Excel) goes to "Cliente"
           sequencia: sequenceCounter++,
         });
       } else {

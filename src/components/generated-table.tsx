@@ -22,9 +22,10 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
     const lowercasedFilter = searchTerm.toLowerCase();
 
     return data.filter((row) =>
-      Object.values(row).some((value) =>
-        String(value).toLowerCase().includes(lowercasedFilter)
-      )
+      Object.entries(row).some(([key, value]) => {
+        if (key === 'br') return false; // Exclude 'br' column from search
+        return String(value).toLowerCase().includes(lowercasedFilter)
+      })
     );
   }, [data, searchTerm]);
 
@@ -59,7 +60,6 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
               <TableRow>
                 <TableHead className="font-semibold">REMESSA</TableHead>
                 <TableHead className="font-semibold">DATA</TableHead>
-                <TableHead className="font-semibold">BR</TableHead>
                 <TableHead className="font-semibold">CIDADE</TableHead>
                 <TableHead className="font-semibold">CLIENTE</TableHead>
                 <TableHead className="font-semibold">LINHA</TableHead>
@@ -73,7 +73,6 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
                   <TableRow key={index} className="hover:bg-muted/50">
                     <TableCell>{row.remessa}</TableCell>
                     <TableCell>{row.data}</TableCell>
-                    <TableCell>{row.br}</TableCell>
                     <TableCell>{row.cidade}</TableCell>
                     <TableCell>{row.cliente}</TableCell>
                     <TableCell>{row.linha}</TableCell>
@@ -83,7 +82,7 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center h-24 text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center h-24 text-muted-foreground">
                     Nenhum resultado encontrado para &quot;{searchTerm}&quot;.
                   </TableCell>
                 </TableRow>
