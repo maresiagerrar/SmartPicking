@@ -4,7 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
   title: 'Data Distillery',
-  description: 'Faça upload, processe e visualize seus dados com facilidade.',
+  description: 'Processamento e visualização de dados.',
 };
 
 export default function RootLayout({

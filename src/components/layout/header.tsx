@@ -9,9 +9,6 @@ export default function Header() {
           <h1 className="text-2xl md:text-3xl font-bold font-headline text-foreground">
             Data Distillery
           </h1>
-          <p className="text-sm text-muted-foreground">
-            Faça upload, processe e visualize seus dados com facilidade.
-          </p>
         </div>
       </div>
     </header>
