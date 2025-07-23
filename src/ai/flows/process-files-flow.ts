@@ -7,7 +7,6 @@
  * - ProcessFilesOutput - The return type for the processFiles function (an array of DataRow).
  */
 
-import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import * as xlsx from 'xlsx';
 import { DataRow } from '@/lib/types';
@@ -33,20 +32,9 @@ const ProcessFilesOutputSchema = z.array(DataRowSchema);
 export type ProcessFilesOutput = z.infer<typeof ProcessFilesOutputSchema>;
 
 export async function processFiles(input: ProcessFilesInput): Promise<ProcessFilesOutput> {
-  return processFilesFlow(input);
-}
-
-const processFilesFlow = ai.defineFlow(
-  {
-    name: 'processFilesFlow',
-    inputSchema: ProcessFilesInputSchema,
-    outputSchema: ProcessFilesOutputSchema,
-  },
-  async (input) => {
     // 1. Parse TXT file
     const txtData: Omit<DataRow, 'br' | 'cidade' | 'cliente'>[] = [];
     const txtLines = input.txtContent.split(/\r?\n/);
-    let currentSequence = 1;
     
     txtLines.forEach(line => {
       if (line.startsWith('Rem :')) {
@@ -57,24 +45,32 @@ const processFilesFlow = ai.defineFlow(
         let linha = 'N/A';
         let qtdEtiqueta = 0;
 
-        const linhaIndex = txtLines.findIndex(l => l.includes(`Rem : ${remessa}`) && l.includes(data));
+        const remessaLineIndex = txtLines.findIndex(l => l.trim() === line.trim());
 
-        if (linhaIndex !== -1) {
-          const pdvLine = txtLines[linhaIndex + 2];
-           if (pdvLine && pdvLine.includes('Linha :')) {
-             const linhaParts = pdvLine.split('Linha :');
-             if(linhaParts.length > 1) {
-                linha = linhaParts[1].trim().split(/\s+/).slice(0, 2).join(' ');
-             }
-           }
-
-          let qtdCxLineIndex = linhaIndex + 3;
-          while(qtdCxLineIndex < txtLines.length && !txtLines[qtdCxLineIndex].startsWith('Qtd Cx')) {
-            qtdCxLineIndex++;
+        if (remessaLineIndex !== -1) {
+          // Find "Linha :" two lines below
+          if (txtLines[remessaLineIndex + 2] && txtLines[remessaLineIndex + 2].includes('Linha :')) {
+            const linhaParts = txtLines[remessaLineIndex + 2].split('Linha :');
+            if(linhaParts.length > 1) {
+               linha = linhaParts[1].trim().split(/\s+/).slice(0, 2).join(' ');
+            }
           }
-           if (qtdCxLineIndex < txtLines.length && txtLines[qtdCxLineIndex + 1]) {
-             qtdEtiqueta = parseInt(txtLines[qtdCxLineIndex + 1].trim(), 10) || 0;
-           }
+
+          // Find "Qtd Cx" and get the value from the next line
+          let currentLineIndex = remessaLineIndex + 1;
+          while(currentLineIndex < txtLines.length && !txtLines[currentLineIndex].startsWith('Rem :')) {
+            if (txtLines[currentLineIndex].trim().startsWith('Qtd Cx')) {
+                 if (txtLines[currentLineIndex + 1]) {
+                    const qtdCxText = txtLines[currentLineIndex + 1].trim();
+                    const qtdCxMatch = qtdCxText.match(/^(\d+)/);
+                    if(qtdCxMatch) {
+                       qtdEtiqueta = parseInt(qtdCxMatch[1], 10) || 0;
+                    }
+                 }
+                 break; 
+            }
+            currentLineIndex++;
+          }
         }
         
         txtData.push({ remessa, data, linha, qtdEtiqueta, sequencia: 0 }); // Sequence will be updated later
@@ -83,28 +79,32 @@ const processFilesFlow = ai.defineFlow(
 
     // 2. Parse Excel file
     const excelData: Pick<DataRow, 'remessa' | 'br' | 'cidade' | 'cliente'>[] = [];
-    const workbook = xlsx.read(Buffer.from(input.excelContent, 'base64'), { type: 'buffer' });
-    const sheetName = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[sheetName];
-    const jsonSheet = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
+    try {
+        const workbook = xlsx.read(Buffer.from(input.excelContent, 'base64'), { type: 'buffer' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonSheet = xlsx.utils.sheet_to_json(worksheet, { header: 1, blankrows: false });
 
-    jsonSheet.forEach((row: any) => {
-      // Assuming Remessa is in Col A, BR in Col K, Cliente in Col L
-      const remessa = row[0]; // Column A
-      const br = row[10];      // Column K
-      const cidade = row[11];   // Column L
-      const cliente = row[12];  // Assuming Cliente is in Column M next to cidade, as it's not specified.
-                                // If Cliente is from a different column, this needs adjustment.
-
-      if (remessa && (br || cidade || cliente)) {
-        excelData.push({
-          remessa: String(remessa).trim(),
-          br: br ? String(br) : 'N/A',
-          cidade: cidade ? String(cidade) : 'N/A',
-          cliente: cliente ? String(cliente) : 'N/A',
+        jsonSheet.forEach((row: any) => {
+          const remessa = row[0]; // Column A
+          const br = row[10];      // Column K
+          const cidade = row[11];   // Column L
+          const cliente = row[12];  // Column M
+    
+          if (remessa && (br || cidade || cliente)) {
+            excelData.push({
+              remessa: String(remessa).trim(),
+              br: br ? String(br) : 'N/A',
+              cidade: cidade ? String(cidade) : 'N/A',
+              cliente: cliente ? String(cliente) : 'N/A',
+            });
+          }
         });
-      }
-    });
+    } catch(e) {
+        console.error("Error parsing excel file", e);
+        // If excel parsing fails, continue with just txt data.
+    }
+
 
     // 3. Merge data
     const mergedData: DataRow[] = [];
@@ -130,5 +130,4 @@ const processFilesFlow = ai.defineFlow(
     });
     
     return mergedData;
-  }
-);
+}
