@@ -185,7 +185,7 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
           </CardDescription>
         </div>
         <div className="flex items-center gap-2">
-            <Button onClick={handleExport} variant="outline" size="sm" disabled={sortedAndFilteredData.length === 0}>
+            <Button onClick={handleExport} size="sm" disabled={sortedAndFilteredData.length === 0} style={{ backgroundColor: '#006443', color: 'white' }}>
                 <FileDown className="mr-2 h-4 w-4" />
                 Exportar para Excel
             </Button>
