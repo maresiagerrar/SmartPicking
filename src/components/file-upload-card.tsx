@@ -126,7 +126,7 @@ export default function FileUploadCard({ onProcess, isLoading }: FileUploadCardP
   return (
     <Card className="w-full animate-fade-in-up shadow-lg">
       <CardHeader>
-        <CardTitle className="font-headline text-2xl">1. Faça upload dos arquivos</CardTitle>
+        <CardTitle className="font-headline text-2xl">Faça upload dos arquivos</CardTitle>
         <CardDescription>
           Selecione o arquivo de texto (.txt) e o arquivo Excel (.xlsx, .xlsm) para iniciar o processamento.
         </CardDescription>
@@ -134,7 +134,7 @@ export default function FileUploadCard({ onProcess, isLoading }: FileUploadCardP
       <CardContent className="grid md:grid-cols-2 gap-6">
         <FileUploadArea
           id="txt-upload"
-          icon={<FileText className="w-12 h-12 text-primary/70" />}
+          icon={<FileText className="w-12 h-12" style={{ color: '#FFCC00' }} />}
           title="Arquivo de Texto"
           acceptedFiles=".txt"
           file={txtFile}
@@ -142,7 +142,7 @@ export default function FileUploadCard({ onProcess, isLoading }: FileUploadCardP
         />
         <FileUploadArea
           id="excel-upload"
-          icon={<FileSpreadsheet className="w-12 h-12 text-primary/70" />}
+          icon={<FileSpreadsheet className="w-12 h-12" style={{ color: '#FFCC00' }} />}
           title="Arquivo Excel"
           acceptedFiles=".xlsx,.xlsm"
           file={excelFile}
@@ -150,7 +150,7 @@ export default function FileUploadCard({ onProcess, isLoading }: FileUploadCardP
         />
       </CardContent>
       <CardFooter>
-        <Button onClick={handleProcessClick} disabled={isLoading || !txtFile || !excelFile} className="w-full md:w-auto ml-auto" size="lg">
+        <Button onClick={handleProcessClick} disabled={isLoading || !txtFile || !excelFile} className="w-full md:w-auto ml-auto" size="lg" variant="destructive">
           {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
