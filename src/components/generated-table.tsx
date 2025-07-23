@@ -104,6 +104,7 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
                     className="w-full h-8 pl-4 pr-2 text-xs"
                     value={filters[column] || ''}
                     onChange={(e) => handleFilterChange(column, e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
                     aria-label={`Filter by ${column}`}
                   />
                 </div>
