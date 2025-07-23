@@ -1,5 +1,6 @@
+
 "use client";
-import { useState, useMemo } from 'react';
+import { useState, useMemo, KeyboardEvent } from 'react';
 import type { DataRow } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -86,7 +87,23 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
     return processableData;
   }, [data, filters, sortConfig]);
 
-  const HeaderCell = ({ column, label }: { column: keyof DataRow, label: string }) => (
+  const HeaderCell = ({ column, label }: { column: keyof DataRow, label: string }) => {
+    const [inputValue, setInputValue] = useState(filters[column] || '');
+
+    const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+            handleFilterChange(column, inputValue);
+            // Optionally close dropdown here if needed, but for now let's keep it open
+            // (e.target as HTMLElement).closest('[data-radix-dropdown-menu-content]')?.
+        }
+    };
+    
+    // Sync local input with global filter state if cleared
+    useState(() => {
+        setInputValue(filters[column] || '');
+    });
+
+    return (
     <div className="flex items-center gap-2">
         <span className="font-semibold">{label}</span>
         <DropdownMenu>
@@ -102,8 +119,9 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
                     type="search"
                     placeholder={`Buscar em ${label}...`}
                     className="w-full h-8 pl-4 pr-2 text-xs"
-                    value={filters[column] || ''}
-                    onChange={(e) => handleFilterChange(column, e.target.value)}
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onKeyDown={handleKeyDown}
                     onClick={(e) => e.stopPropagation()}
                     aria-label={`Filter by ${column}`}
                   />
@@ -120,7 +138,7 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
             </DropdownMenuContent>
         </DropdownMenu>
     </div>
-  );
+  )};
 
   return (
     <Card className="animate-fade-in shadow-lg">
