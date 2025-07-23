@@ -1,6 +1,6 @@
 export default function Header() {
   return (
-    <header className="py-6 px-4 md:px-6 bg-card border-b shadow-sm sticky top-0 z-20">
+    <header className="py-6 px-4 md:px-6 border-b shadow-sm sticky top-0 z-20" style={{ background: 'linear-gradient(90deg, #FC0 -0.13%, #FC0 29.87%, #FFDE59 72.87%, #FFF0B2 99.87%)' }}>
       <div className="container mx-auto flex items-center gap-4">
         <svg xmlns="http://www.w3.org/2000/svg" width="100" height="15" viewBox="0 0 100 15" fill="none">
           <g clipPath="url(#clip0_8246_84949)">
@@ -25,7 +25,7 @@ export default function Header() {
           </defs>
         </svg>
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold font-headline text-foreground">
+          <h1 className="text-2xl md:text-3xl font-bold font-headline text-black">
             Smart Picking
           </h1>
         </div>
