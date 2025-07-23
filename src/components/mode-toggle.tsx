@@ -16,13 +16,13 @@ export function ModeToggle() {
 
   return (
     <div className="flex items-center space-x-2">
-      <Sun className="h-5 w-5" />
+      <Sun className="h-5 w-5" style={{ color: 'black' }} />
       <Switch
         id="theme-switch"
         checked={theme === 'dark'}
         onCheckedChange={toggleTheme}
       />
-      <Moon className="h-5 w-5" />
+      <Moon className="h-5 w-5" style={{ color: 'black' }} />
       <Label htmlFor="theme-switch" className="sr-only">
         Toggle theme
       </Label>
