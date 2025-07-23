@@ -179,7 +179,7 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
     <Card className="animate-fade-in shadow-lg">
       <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <CardTitle className="font-headline text-2xl">2. Tabela de Dados Gerada</CardTitle>
+          <CardTitle className="font-headline text-2xl">Dados da Etiqueta</CardTitle>
           <CardDescription>
             Os dados processados são exibidos abaixo. Use o menu em cada coluna para filtrar e ordenar os resultados.
           </CardDescription>
