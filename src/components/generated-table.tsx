@@ -189,7 +189,7 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
                 <X className="mr-2 h-4 w-4" />
                 Limpar Filtros & Ordem
             </Button>
-            <Button onClick={onReset} variant="outline">
+            <Button onClick={onReset} style={{ backgroundColor: '#D40511', color: 'white' }}>
               <RotateCcw className="mr-2 h-4 w-4" />
               Processar Novos Arquivos
             </Button>
