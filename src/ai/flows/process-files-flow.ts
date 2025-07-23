@@ -63,7 +63,10 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
           if (txtLines[remessaLineIndex + 2] && txtLines[remessaLineIndex + 2].includes('Linha :')) {
             const linhaParts = txtLines[remessaLineIndex + 2].split('Linha :');
             if(linhaParts.length > 1) {
-               linha = linhaParts[1].trim().split(/\s+/).slice(0, 2).join(' ');
+               const linhaContent = linhaParts[1].trim().split(/\s+/);
+               if(linhaContent.length > 1) {
+                  linha = linhaContent[1]; // Get the second element which should be the number
+               }
             }
           }
 
