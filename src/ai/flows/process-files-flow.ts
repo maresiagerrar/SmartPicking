@@ -25,7 +25,7 @@ const DataRowSchema = z.object({
   cliente: z.string(),
   ordem: z.string(),
   qtdEtiqueta: z.union([z.number(), z.string()]),
-  sequencia: z.string(),
+  nCaixas: z.string(),
 });
 
 const ProcessFilesOutputSchema = z.array(DataRowSchema);
@@ -33,7 +33,7 @@ export type ProcessFilesOutput = z.infer<typeof ProcessFilesOutputSchema>;
 
 export async function processFiles(input: ProcessFilesInput): Promise<ProcessFilesOutput> {
     // 1. Parse TXT file
-    const txtData: Omit<DataRow, 'cidade' | 'cliente' | 'sequencia' | 'qtdEtiqueta'>[] & { qtdEtiqueta: number } = [];
+    const txtData: Omit<DataRow, 'cidade' | 'cliente' | 'nCaixas' | 'qtdEtiqueta'>[] & { qtdEtiqueta: number } = [];
     const txtLines = input.txtContent.split(/\r?\n/);
     
     txtLines.forEach(line => {
@@ -151,15 +151,15 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
             qtdEtiqueta: qtdEtiquetas,
         };
         
-        const sequencia = `${String(i + 1).padStart(2, '0')}/${totalEtiquetasString}`;
+        const nCaixas = `${String(i + 1).padStart(2, '0')}/${totalEtiquetasString}`;
 
         mergedData.push({
             ...baseItem,
-            sequencia: sequencia,
+            nCaixas: nCaixas,
         });
       }
 
-      // Check if the next item has a different BR code
+      // Check if the next item has a different BR code and it's not the last item
       const nextTxtItem = txtData[index + 1];
       if (nextTxtItem && nextTxtItem.br !== txtItem.br) {
         mergedData.push({
@@ -170,7 +170,7 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
             cliente: `PROXIMO ${nextTxtItem.br}`,
             ordem: '',
             qtdEtiqueta: '',
-            sequencia: '',
+            nCaixas: '',
         });
       }
     });

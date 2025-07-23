@@ -56,7 +56,7 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
       "CLIENTE",
       "ORDEM",
       "QTD ETIQUETA",
-      "SEQUÊNCIA",
+      "Nº CAIXAS",
     ];
 
     const body = sortedAndFilteredData.map(row => ({
@@ -67,7 +67,7 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
       "CLIENTE": row.cliente,
       "ORDEM": row.ordem,
       "QTD ETIQUETA": row.qtdEtiqueta,
-      "SEQUÊNCIA": row.sequencia
+      "Nº CAIXAS": row.nCaixas
     }));
     
     const worksheet = xlsx.utils.json_to_sheet(body, { header: header });
@@ -215,7 +215,7 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
                 <TableHead><HeaderCell column="cliente" label="CLIENTE"/></TableHead>
                 <TableHead><HeaderCell column="ordem" label="ORDEM"/></TableHead>
                 <TableHead><HeaderCell column="qtdEtiqueta" label="QTD ETIQUETA"/></TableHead>
-                <TableHead><HeaderCell column="sequencia" label="SEQUÊNCIA"/></TableHead>
+                <TableHead><HeaderCell column="nCaixas" label="Nº CAIXAS"/></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -235,7 +235,7 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
                     <TableCell>{row.cliente}</TableCell>
                     <TableCell>{row.ordem}</TableCell>
                     <TableCell className="text-center">{row.qtdEtiqueta}</TableCell>
-                    <TableCell className="text-center">{row.sequencia}</TableCell>
+                    <TableCell className="text-center">{row.nCaixas}</TableCell>
                   </TableRow>
                 ))
               ) : (
