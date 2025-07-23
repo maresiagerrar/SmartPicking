@@ -128,9 +128,6 @@ export default function FileUploadCard({ onProcess, isLoading }: FileUploadCardP
     <Card className="w-full animate-fade-in-up shadow-lg">
       <CardHeader>
         <CardTitle className="font-headline text-2xl">Faça upload dos arquivos</CardTitle>
-        <CardDescription>
-          Selecione o arquivo de texto (.txt) e o arquivo Excel (.xlsx, .xlsm) para iniciar o processamento.
-        </CardDescription>
       </CardHeader>
       <CardContent className="grid md:grid-cols-2 gap-6">
         <FileUploadArea
