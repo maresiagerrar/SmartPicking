@@ -9,10 +9,22 @@ import { Label } from "@/components/ui/label"
 
 export function ModeToggle() {
   const { theme, setTheme } = useTheme()
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const toggleTheme = () => {
     setTheme(theme === 'dark' ? 'light' : 'dark');
   };
+  
+  if (!mounted) {
+    return (
+        <div className="flex items-center space-x-2 h-6 w-[76px]">
+        </div>
+    );
+  }
 
   return (
     <div className="flex items-center space-x-2">
