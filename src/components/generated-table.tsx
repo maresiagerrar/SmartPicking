@@ -5,8 +5,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Search, RotateCcw, X } from 'lucide-react';
+import { RotateCcw, X, ChevronDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { cn } from '@/lib/utils';
+
 
 interface GeneratedTableProps {
   data: DataRow[];
@@ -14,9 +22,15 @@ interface GeneratedTableProps {
 }
 
 type FilterState = Partial<Record<keyof DataRow, string>>;
+type SortDirection = 'ascending' | 'descending';
+type SortConfig = {
+    key: keyof DataRow;
+    direction: SortDirection;
+} | null;
 
 export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
   const [filters, setFilters] = useState<FilterState>({});
+  const [sortConfig, setSortConfig] = useState<SortConfig>(null);
 
   const handleFilterChange = (column: keyof DataRow, value: string) => {
     setFilters(prev => ({ ...prev, [column]: value }));
@@ -24,24 +38,80 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
   
   const clearFilters = () => {
     setFilters({});
+    setSortConfig(null);
   }
 
-  const filteredData = useMemo(() => {
+  const requestSort = (key: keyof DataRow) => {
+    let direction: SortDirection = 'ascending';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const sortedAndFilteredData = useMemo(() => {
     const activeFilters = Object.entries(filters).filter(([, value]) => value);
+    let processableData = [...data];
 
-    if (activeFilters.length === 0) return data;
-
-    return data.filter((row) => {
-      return activeFilters.every(([key, value]) => {
-        const rowValue = row[key as keyof DataRow];
-        return String(rowValue).toLowerCase().includes(String(value).toLowerCase());
+    // Filtering
+    if (activeFilters.length > 0) {
+      processableData = processableData.filter((row) => {
+        return activeFilters.every(([key, value]) => {
+          const rowValue = row[key as keyof DataRow];
+          return String(rowValue).toLowerCase().includes(String(value).toLowerCase());
+        });
       });
-    });
-  }, [data, filters]);
+    }
 
-  const FilterInput = ({ column, label }: { column: keyof DataRow, label: string }) => (
+    // Sorting
+    if (sortConfig !== null) {
+      processableData.sort((a, b) => {
+        const aValue = a[sortConfig.key];
+        const bValue = b[sortConfig.key];
+
+        // Handle numeric comparison
+        if (typeof aValue === 'number' && typeof bValue === 'number') {
+            if (aValue < bValue) return sortConfig.direction === 'ascending' ? -1 : 1;
+            if (aValue > bValue) return sortConfig.direction === 'ascending' ? 1 : -1;
+            return 0;
+        }
+
+        // Handle string comparison
+        if (typeof aValue === 'string' && typeof bValue === 'string') {
+            const comparison = aValue.localeCompare(bValue, 'pt-BR', { numeric: true });
+            return sortConfig.direction === 'ascending' ? comparison : -comparison;
+        }
+        
+        return 0;
+      });
+    }
+
+    return processableData;
+  }, [data, filters, sortConfig]);
+
+  const HeaderCell = ({ column, label }: { column: keyof DataRow, label: string }) => (
     <div className="flex flex-col gap-2">
-       <span className="font-semibold">{label}</span>
+      <div className="flex items-center justify-between gap-2">
+        <span className="font-semibold">{label}</span>
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-6 w-6">
+                    <ChevronDown className="h-4 w-4" />
+                    <span className="sr-only">Opções da coluna</span>
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => requestSort(column)}>
+                    <ArrowUp className="mr-2 h-4 w-4" />
+                    Ordenar A-Z
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => requestSort(column)}>
+                    <ArrowDown className="mr-2 h-4 w-4" />
+                    Ordenar Z-A
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
       <div className="relative">
         <Input
           type="search"
@@ -61,13 +131,13 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
         <div>
           <CardTitle className="font-headline text-2xl">2. Tabela de Dados Gerada</CardTitle>
           <CardDescription>
-            Os dados processados são exibidos abaixo. Use os campos em cada coluna para filtrar os resultados.
+            Os dados processados são exibidos abaixo. Use o menu em cada coluna para filtrar e ordenar os resultados.
           </CardDescription>
         </div>
         <div className="flex items-center gap-2">
-            <Button onClick={clearFilters} variant="outline" size="sm" disabled={Object.values(filters).every(v => !v)}>
+            <Button onClick={clearFilters} variant="outline" size="sm" disabled={Object.values(filters).every(v => !v) && !sortConfig}>
                 <X className="mr-2 h-4 w-4" />
-                Limpar Filtros
+                Limpar Filtros & Ordem
             </Button>
             <Button onClick={onReset} variant="outline">
               <RotateCcw className="mr-2 h-4 w-4" />
@@ -80,19 +150,19 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
           <Table>
             <TableHeader className="sticky top-0 bg-card z-10 shadow-sm">
               <TableRow>
-                <TableHead className="align-top"><FilterInput column="remessa" label="REMESSA"/></TableHead>
-                <TableHead className="align-top"><FilterInput column="data" label="DATA"/></TableHead>
-                <TableHead className="align-top"><FilterInput column="br" label="BR" /></TableHead>
-                <TableHead className="align-top"><FilterInput column="cidade" label="CIDADE"/></TableHead>
-                <TableHead className="align-top"><FilterInput column="cliente" label="CLIENTE"/></TableHead>
-                <TableHead className="align-top"><FilterInput column="ordem" label="ORDEM"/></TableHead>
-                <TableHead className="align-top"><FilterInput column="qtdEtiqueta" label="QTD DE ETIQUETA"/></TableHead>
-                <TableHead className="align-top"><FilterInput column="sequencia" label="SEQUÊNCIA"/></TableHead>
+                <TableHead className="align-top"><HeaderCell column="remessa" label="REMESSA"/></TableHead>
+                <TableHead className="align-top"><HeaderCell column="data" label="DATA"/></TableHead>
+                <TableHead className="align-top"><HeaderCell column="br" label="BR" /></TableHead>
+                <TableHead className="align-top"><HeaderCell column="cidade" label="CIDADE"/></TableHead>
+                <TableHead className="align-top"><HeaderCell column="cliente" label="CLIENTE"/></TableHead>
+                <TableHead className="align-top"><HeaderCell column="ordem" label="ORDEM"/></TableHead>
+                <TableHead className="align-top"><HeaderCell column="qtdEtiqueta" label="QTD ETIQUETA"/></TableHead>
+                <TableHead className="align-top"><HeaderCell column="sequencia" label="SEQUÊNCIA"/></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredData.length > 0 ? (
-                filteredData.map((row, index) => (
+              {sortedAndFilteredData.length > 0 ? (
+                sortedAndFilteredData.map((row, index) => (
                   <TableRow key={index} className="hover:bg-muted/50">
                     <TableCell>{row.remessa}</TableCell>
                     <TableCell>{row.data}</TableCell>
