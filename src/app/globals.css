@@ -69,16 +69,4 @@
     background: linear-gradient(90deg, #FC0 -0.13%, #FC0 29.87%, #FFDE59 72.87%, #FFF0B2 99.87%);
   }
 
-  .dark header {
-    background: #222;
-  }
-
-  .dark header h1 {
-    color: #FFF;
-  }
-
-  .dark header svg path {
-    fill: #FFF;
-  }
-
 }
