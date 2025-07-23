@@ -1,8 +1,7 @@
-
 "use client";
 import { useState, useMemo, KeyboardEvent, useEffect } from 'react';
 import type { DataRow } from '@/lib/types';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -180,9 +179,6 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
       <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <CardTitle className="font-headline text-2xl">Dados da Etiqueta</CardTitle>
-          <CardDescription>
-            Os dados processados são exibidos abaixo. Use o menu em cada coluna para filtrar e ordenar os resultados.
-          </CardDescription>
         </div>
         <div className="flex items-center gap-2">
             <Button onClick={handleExport} size="sm" disabled={sortedAndFilteredData.length === 0} style={{ backgroundColor: '#006443', color: 'white' }}>
