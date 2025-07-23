@@ -119,9 +119,17 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
         // If excel parsing fails, continue with just txt data.
     }
 
-
     // 3. Merge data
     const mergedData: DataRow[] = [];
+    const clienteMapping: Record<string, string> = {
+      "BR495477": "SJBV - LEME",
+      "BR495480": "SJBV - PIRASSUNUNGA",
+      "BR495489": "SJBV - MOCOCA",
+      "BR495491": "SJBV - SJ BOA VISTA",
+      "BR495492": "SJBV - SJ RIO PARDO",
+      "BR442154": "ITAPEVA",
+      "BR442706": "ITAPEVA",
+    };
 
     txtData.forEach(txtItem => {
       const excelItem = excelData.find(excel => excel.remessa === txtItem.remessa);
@@ -130,11 +138,16 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
       const totalEtiquetasString = String(qtdEtiquetas).padStart(2, '0');
       
       for (let i = 0; i < qtdEtiquetas; i++) {
+        let cliente = excelItem?.cliente || 'N/A';
+        // Override cliente based on BR mapping
+        if (clienteMapping[txtItem.br]) {
+            cliente = clienteMapping[txtItem.br];
+        }
+
         const baseItem = {
             ...txtItem,
             cidade: excelItem?.cidade || 'N/A',
-            cliente: excelItem?.cliente || 'N/A',
-            // Ensure qtdEtiqueta is always at least 1 for display
+            cliente: cliente,
             qtdEtiqueta: qtdEtiquetas,
         };
         
