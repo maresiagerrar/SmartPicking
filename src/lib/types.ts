@@ -4,7 +4,7 @@ export type DataRow = {
   br: string;
   cidade: string;
   cliente: string;
-  linha: string;
+  ordem: string;
   qtdEtiqueta: number;
   sequencia: number;
 };

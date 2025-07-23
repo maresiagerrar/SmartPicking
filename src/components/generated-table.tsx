@@ -62,7 +62,7 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
                 <TableHead className="font-semibold">BR</TableHead>
                 <TableHead className="font-semibold">CIDADE</TableHead>
                 <TableHead className="font-semibold">CLIENTE</TableHead>
-                <TableHead className="font-semibold">LINHA</TableHead>
+                <TableHead className="font-semibold">ORDEM</TableHead>
                 <TableHead className="font-semibold">QTD DE ETIQUETA</TableHead>
                 <TableHead className="font-semibold">SEQUÊNCIA</TableHead>
               </TableRow>
@@ -76,7 +76,7 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
                     <TableCell>{row.br}</TableCell>
                     <TableCell>{row.cidade}</TableCell>
                     <TableCell>{row.cliente}</TableCell>
-                    <TableCell>{row.linha}</TableCell>
+                    <TableCell>{row.ordem}</TableCell>
                     <TableCell className="text-center">{row.qtdEtiqueta}</TableCell>
                     <TableCell className="text-center">{row.sequencia}</TableCell>
                   </TableRow>

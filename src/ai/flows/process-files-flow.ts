@@ -23,7 +23,7 @@ const DataRowSchema = z.object({
   br: z.string(),
   cidade: z.string(),
   cliente: z.string(),
-  linha: z.string(),
+  ordem: z.string(),
   qtdEtiqueta: z.number(),
   sequencia: z.number(),
 });
@@ -42,7 +42,7 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
         const remessa = parts[2];
         const data = parts[3];
         
-        let linha = 'N/A';
+        let ordem = 'N/A';
         let qtdEtiqueta = 0;
         let br = 'N/A';
 
@@ -65,7 +65,9 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
             if(linhaParts.length > 1) {
                const linhaContent = linhaParts[1].trim().split(/\s+/);
                if(linhaContent.length > 1) {
-                  linha = linhaContent[1]; // Get the second element which should be the number
+                  ordem = linhaContent[1]; 
+               } else {
+                  ordem = linhaContent[0];
                }
             }
           }
@@ -87,7 +89,7 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
           }
         }
         
-        txtData.push({ remessa, data, br, linha, qtdEtiqueta, sequencia: 0 }); // Sequence will be updated later
+        txtData.push({ remessa, data, br, ordem, qtdEtiqueta, sequencia: 0 }); // Sequence will be updated later
       }
     });
 
@@ -101,15 +103,14 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
 
         jsonSheet.forEach((row: any) => {
           const remessa = row[0]; // Column A
-          const brColumn = row[10];      // Column K
-          const cidadeColumn = row[11];   // Column L
-          const clienteColumn = row[12];  // Column M
+          const cidadeColumn = row[10];      // Column K
+          const clienteColumn = row[11];   // Column L
     
-          if (remessa && (brColumn || cidadeColumn || clienteColumn)) {
+          if (remessa && (cidadeColumn || clienteColumn)) {
             excelData.push({
               remessa: String(remessa).trim(),
-              cidade: brColumn ? String(brColumn) : 'N/A',
-              cliente: cidadeColumn ? String(cidadeColumn) : 'N/A',
+              cidade: cidadeColumn ? String(cidadeColumn) : 'N/A',
+              cliente: clienteColumn ? String(clienteColumn) : 'N/A',
             });
           }
         });
@@ -128,8 +129,8 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
       if (excelItem) {
         mergedData.push({
           ...txtItem,
-          cidade: excelItem.cidade, // Column K (BR in Excel) goes to "Cidade"
-          cliente: excelItem.cliente, // Column L (Cidade in Excel) goes to "Cliente"
+          cidade: excelItem.cidade, 
+          cliente: excelItem.cliente,
           sequencia: sequenceCounter++,
         });
       } else {
