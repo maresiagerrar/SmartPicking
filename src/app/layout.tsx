@@ -3,7 +3,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
-  title: 'Data Distillery',
+  title: 'Smart Picking',
   description: 'Processamento e visualização de dados.',
 };
 

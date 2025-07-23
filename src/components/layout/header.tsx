@@ -7,7 +7,7 @@ export default function Header() {
         <DatabaseZap className="h-8 w-8 text-primary" />
         <div>
           <h1 className="text-2xl md:text-3xl font-bold font-headline text-foreground">
-            Data Distillery
+            Smart Picking
           </h1>
         </div>
       </div>
