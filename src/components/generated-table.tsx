@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Search, RotateCcw } from 'lucide-react';
+import { Search, RotateCcw, X } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface GeneratedTableProps {
@@ -13,20 +13,44 @@ interface GeneratedTableProps {
   onReset: () => void;
 }
 
+type FilterState = Partial<Record<keyof DataRow, string>>;
+
 export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
-  const [searchTerm, setSearchTerm] = useState("");
+  const [filters, setFilters] = useState<FilterState>({});
+
+  const handleFilterChange = (column: keyof DataRow, value: string) => {
+    setFilters(prev => ({ ...prev, [column]: value }));
+  };
+  
+  const clearFilters = () => {
+    setFilters({});
+  }
 
   const filteredData = useMemo(() => {
-    if (!searchTerm) return data;
+    const activeFilters = Object.entries(filters).filter(([, value]) => value);
 
-    const lowercasedFilter = searchTerm.toLowerCase();
+    if (activeFilters.length === 0) return data;
 
-    return data.filter((row) =>
-      Object.entries(row).some(([key, value]) => {
-        return String(value).toLowerCase().includes(lowercasedFilter)
-      })
-    );
-  }, [data, searchTerm]);
+    return data.filter((row) => {
+      return activeFilters.every(([key, value]) => {
+        const rowValue = row[key as keyof DataRow];
+        return String(rowValue).toLowerCase().includes(String(value).toLowerCase());
+      });
+    });
+  }, [data, filters]);
+
+  const FilterInput = ({ column }: { column: keyof DataRow }) => (
+    <div className="relative">
+      <Input
+        type="search"
+        placeholder={`Buscar ${column}...`}
+        className="w-full h-8 pl-4 pr-2 text-xs"
+        value={filters[column] || ''}
+        onChange={(e) => handleFilterChange(column, e.target.value)}
+        aria-label={`Filter by ${column}`}
+      />
+    </div>
+  );
 
   return (
     <Card className="animate-fade-in shadow-lg">
@@ -34,37 +58,33 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
         <div>
           <CardTitle className="font-headline text-2xl">2. Tabela de Dados Gerada</CardTitle>
           <CardDescription>
-            Os dados processados são exibidos abaixo. Use a busca para filtrar os resultados.
+            Os dados processados são exibidos abaixo. Use os campos em cada coluna para filtrar os resultados.
           </CardDescription>
         </div>
-        <Button onClick={onReset} variant="outline">
-          <RotateCcw className="mr-2 h-4 w-4" />
-          Processar Novos Arquivos
-        </Button>
+        <div className="flex items-center gap-2">
+            <Button onClick={clearFilters} variant="outline" size="sm" disabled={Object.values(filters).every(v => !v)}>
+                <X className="mr-2 h-4 w-4" />
+                Limpar Filtros
+            </Button>
+            <Button onClick={onReset} variant="outline">
+              <RotateCcw className="mr-2 h-4 w-4" />
+              Processar Novos Arquivos
+            </Button>
+        </div>
       </CardHeader>
       <CardContent>
-        <div className="relative mb-4">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder="Buscar em toda a tabela..."
-            className="pl-10 w-full md:w-1/3"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
         <ScrollArea className="border rounded-md h-[500px]">
           <Table>
             <TableHeader className="sticky top-0 bg-card z-10 shadow-sm">
               <TableRow>
-                <TableHead className="font-semibold">REMESSA</TableHead>
-                <TableHead className="font-semibold">DATA</TableHead>
-                <TableHead className="font-semibold">BR</TableHead>
-                <TableHead className="font-semibold">CIDADE</TableHead>
-                <TableHead className="font-semibold">CLIENTE</TableHead>
-                <TableHead className="font-semibold">ORDEM</TableHead>
-                <TableHead className="font-semibold">QTD DE ETIQUETA</TableHead>
-                <TableHead className="font-semibold">SEQUÊNCIA</TableHead>
+                <TableHead className="font-semibold align-top"><div className="pb-2">REMESSA</div><FilterInput column="remessa" /></TableHead>
+                <TableHead className="font-semibold align-top"><div className="pb-2">DATA</div><FilterInput column="data" /></TableHead>
+                <TableHead className="font-semibold align-top"><div className="pb-2">BR</div><FilterInput column="br" /></TableHead>
+                <TableHead className="font-semibold align-top"><div className="pb-2">CIDADE</div><FilterInput column="cidade" /></TableHead>
+                <TableHead className="font-semibold align-top"><div className="pb-2">CLIENTE</div><FilterInput column="cliente" /></TableHead>
+                <TableHead className="font-semibold align-top"><div className="pb-2">ORDEM</div><FilterInput column="ordem" /></TableHead>
+                <TableHead className="font-semibold align-top"><div className="pb-2">QTD DE ETIQUETA</div><FilterInput column="qtdEtiqueta" /></TableHead>
+                <TableHead className="font-semibold align-top"><div className="pb-2">SEQUÊNCIA</div><FilterInput column="sequencia" /></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -84,7 +104,7 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
               ) : (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center h-24 text-muted-foreground">
-                    Nenhum resultado encontrado para &quot;{searchTerm}&quot;.
+                    Nenhum resultado encontrado.
                   </TableCell>
                 </TableRow>
               )}
