@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import LabelPreview from './label-preview';
 import { cn } from '@/lib/utils';
 import * as xlsx from 'xlsx';
@@ -311,6 +311,7 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
         </div>
         <Dialog open={!!previewData} onOpenChange={(isOpen) => !isOpen && setPreviewData(null)}>
           <DialogContent className="p-0 max-w-fit printable-area label-preview-dialog">
+            <DialogTitle className="sr-only">Visualização da Etiqueta</DialogTitle>
             {previewData && <LabelPreview data={previewData} onNavigate={handleNavigate} onClose={() => setPreviewData(null)} onPrint={markAsPrinted} />}
           </DialogContent>
         </Dialog>
