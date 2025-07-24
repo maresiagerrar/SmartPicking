@@ -74,12 +74,12 @@ export default function LabelPreview({ data, onClose }: LabelPreviewProps) {
         
         {/* Left Section */}
         <div className="h-full flex flex-col justify-between items-center p-1 border-r border-black" style={{ width: '25%'}}>
-            <div className="w-full flex-grow flex items-center justify-center">
+            <div className="w-full flex-grow flex items-center justify-center overflow-hidden">
                  <div style={{ transform: 'rotate(-90deg)', transformOrigin: 'center' }} className="flex flex-col items-center whitespace-nowrap">
                     <div className="bg-white px-2">
                       <Barcode value={data.remessa || 'N/A'} width={1} height={35} displayValue={false} background="white" />
                     </div>
-                    <span className="text-xs font-semibold" style={{letterSpacing: '1px'}}>{data.remessa}</span>
+                    <span className="text-xs font-semibold -mt-1" style={{letterSpacing: '1px'}}>{data.remessa}</span>
                 </div>
             </div>
             <div className="flex flex-col items-center text-center -space-y-1">
@@ -94,7 +94,7 @@ export default function LabelPreview({ data, onClose }: LabelPreviewProps) {
         <div className="h-full flex flex-col p-2 justify-between" style={{ width: '75%'}}>
             <div>
               <div className="flex justify-between items-start">
-                  <span className="text-lg font-bold">{data.data}</span>
+                  <span className="text-xs font-bold">{data.data}</span>
                   <div className="flex items-baseline gap-2">
                       <span className="text-lg font-semibold">ORDEM:</span>
                       <span className="text-5xl font-bold">{getOrderNumber()}</span>
@@ -116,7 +116,7 @@ export default function LabelPreview({ data, onClose }: LabelPreviewProps) {
                 <div className="bg-white px-2">
                   <Barcode value={data.remessa || 'N/A'} width={2} height={40} displayValue={false} background="white" />
                 </div>
-                <span className="text-lg font-semibold tracking-widest -mt-1">{data.remessa}</span>
+                <span className="text-lg font-semibold tracking-widest -mt-2">{data.remessa}</span>
             </div>
         </div>
       </div>
