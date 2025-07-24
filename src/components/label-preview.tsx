@@ -94,7 +94,7 @@ export default function LabelPreview({ data, onClose }: LabelPreviewProps) {
         <div className="h-full flex flex-col p-2 justify-between" style={{ width: '75%'}}>
             <div>
               <div className="flex justify-between items-start">
-                  <span className="text-3xl font-bold">{data.data}</span>
+                  <span className="text-2xl font-bold">{data.data}</span>
                   <div className="flex items-baseline gap-2">
                       <span className="text-lg font-semibold">ORDEM:</span>
                       <span className="text-5xl font-bold">{getOrderNumber()}</span>
@@ -116,7 +116,7 @@ export default function LabelPreview({ data, onClose }: LabelPreviewProps) {
                 <div className="bg-white px-2">
                   <Barcode value={data.remessa || 'N/A'} width={2} height={40} displayValue={false} background="white" />
                 </div>
-                <span className="text-lg font-semibold tracking-widest">{data.remessa}</span>
+                <span className="text-lg font-semibold tracking-widest -mt-1">{data.remessa}</span>
             </div>
         </div>
       </div>
