@@ -10,9 +10,9 @@ interface LabelPreviewProps {
   onClose: () => void;
 }
 
-const BarcodePlaceholder = ({ value }: { value: string }) => (
+const BarcodePlaceholder = ({ value, width = 2, height = 50 }: { value: string, width?: number, height?: number }) => (
     <div className="flex flex-col items-center">
-        <Barcode value={value} height={50} displayValue={false} margin={0} />
+        <Barcode value={value} width={width} height={height} displayValue={false} margin={0} />
     </div>
 );
 
@@ -23,7 +23,7 @@ export default function LabelPreview({ data, onClose }: LabelPreviewProps) {
   };
 
   return (
-    <div className="bg-white text-black p-4 max-w-3xl mx-auto printable-area">
+    <div className="bg-white text-black p-4 max-w-4xl mx-auto printable-area">
       <div className="flex justify-between items-center mb-4 non-printable">
         <h2 className="text-xl font-bold font-headline">Visualização da Etiqueta</h2>
         <div>
@@ -37,49 +37,47 @@ export default function LabelPreview({ data, onClose }: LabelPreviewProps) {
       </div>
 
       {/* Etiqueta */}
-      <div className="border-2 border-black relative" style={{ width: '800px', height: '400px'}}>
-        {/* Main content */}
-        <div className="absolute top-0 left-0 p-4 w-full h-full">
-          <div className="grid grid-cols-12 gap-2 h-full">
+      <div className="border border-black relative font-mono" style={{ width: '831px', height: '480px'}}>
+        
+        {/* Vertical Line */}
+        <div className="absolute top-[13px] left-[664px] h-[460px] w-[2px] bg-black"></div>
+        {/* Horizontal Line */}
+        <div className="absolute top-[219px] left-[16px] w-[631px] h-[2px] bg-black"></div>
 
-            {/* Left Column */}
-            <div className="col-span-8 border-r-2 border-black pr-4 flex flex-col justify-between">
-                <div>
-                    <p className="text-2xl font-bold">{data.cidade} - {data.cliente}</p>
-                </div>
-                <div className="flex justify-between items-end">
-                    <div className="text-center">
-                        <p className="text-xl font-bold">Nº CAIXAS:</p>
-                        <p className="text-5xl font-bold">{data.nCaixas}</p>
-                    </div>
-                    <div className="text-center">
-                        <p className="text-xl font-bold">ORDEM:</p>
-                        <p className="text-3xl font-bold">{data.ordem}</p>
-                    </div>
-                    <div className="text-center">
-                        <p className="text-xl font-bold">QTD ETIQUETA:</p>
-                        <p className="text-5xl font-bold">{data.qtdEtiqueta}</p>
-                    </div>
-                </div>
-            </div>
+        {/* Left-Top */}
+        <div className="absolute top-[13px] left-[16px] w-[648px] h-[206px]">
+            <p className="absolute top-[180px] left-0 text-3xl font-bold">{data.cidade} - {data.cliente}</p>
+        </div>
 
-            {/* Right Column */}
-            <div className="col-span-4 flex flex-col justify-between items-center text-center">
-                <div className="w-full">
-                    <BarcodePlaceholder value={data.remessa} />
-                    <p className="text-sm font-semibold">{data.remessa}</p>
-                </div>
-                <div>
-                    <p className="text-4xl font-bold">{data.br}</p>
-                    <p className="text-4xl font-bold mt-4">{data.data}</p>
-                </div>
-                <div className="w-full">
-                    <BarcodePlaceholder value={data.remessa} />
-                </div>
+        {/* Left-Bottom */}
+        <div className="absolute top-[221px] left-[16px] w-[648px] h-[246px]">
+             <div className="absolute top-[80px] left-[10px]">
+                <p className="text-2xl font-bold text-center">Nº CAIXAS:</p>
+                <p className="text-6xl font-bold text-center mt-2">{data.nCaixas}</p>
             </div>
-          </div>
-          {/* Border line */}
-          <div className="absolute bottom-1/2 left-4 w-[calc(66%-2rem)] border-t-2 border-black"></div>
+             <div className="absolute top-[80px] left-[300px]">
+                <p className="text-2xl font-bold text-center">ORDEM:</p>
+                <p className="text-5xl font-bold text-center mt-2">{data.ordem}</p>
+            </div>
+             <div className="absolute top-[80px] right-[10px]">
+                <p className="text-2xl font-bold text-center">QTD ETIQUETA:</p>
+                <p className="text-6xl font-bold text-center mt-2">{data.qtdEtiqueta}</p>
+            </div>
+        </div>
+
+        {/* Right Column */}
+        <div className="absolute top-[13px] right-[10px] w-[150px] h-[460px] flex flex-col justify-between items-center text-center">
+            <div className="w-full">
+                <BarcodePlaceholder value={data.remessa} height={80} width={3} />
+                <p className="text-sm font-semibold">{data.remessa}</p>
+            </div>
+            <div>
+                <p className="text-5xl font-bold">{data.br}</p>
+                <p className="text-5xl font-bold mt-8">{data.data}</p>
+            </div>
+            <div className="w-full">
+                 <BarcodePlaceholder value={data.remessa} height={80} width={3}/>
+            </div>
         </div>
       </div>
     </div>
