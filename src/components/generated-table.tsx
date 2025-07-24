@@ -36,7 +36,13 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
   const [filters, setFilters] = useState<FilterState>({});
   const [sortConfig, setSortConfig] = useState<SortConfig>(null);
   const [previewData, setPreviewData] = useState<DataRow | null>(null);
+  const [printedRows, setPrintedRows] = useState<Set<string>>(new Set());
 
+  const getRowId = (row: DataRow) => `${row.remessa}-${row.ordem}-${row.nCaixas}`;
+
+  const markAsPrinted = (row: DataRow) => {
+    setPrintedRows(prev => new Set(prev).add(getRowId(row)));
+  };
 
   const handleFilterChange = (column: keyof DataRow, value: string) => {
     setFilters(prev => ({ ...prev, [column]: value }));
@@ -51,7 +57,7 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
     setSortConfig({ key, direction });
   };
 
-  const handlePrint = () => {
+  const handlePrintAll = () => {
     if (sortedAndFilteredData.length > 0) {
       const firstPrintableRow = sortedAndFilteredData.find(row => row.br !== 'ATENÇÃO');
       if (firstPrintableRow) {
@@ -64,18 +70,19 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
     if (!previewData) return;
     
     const printableData = sortedAndFilteredData.filter(row => row.br !== 'ATENÇÃO');
-    const currentIndex = printableData.findIndex(item => item === previewData);
+    const currentIndex = printableData.findIndex(item => getRowId(item) === getRowId(previewData));
 
     if (currentIndex === -1) return;
 
     let nextIndex;
     if (direction === 'next') {
-        nextIndex = (currentIndex + 1);
+        nextIndex = currentIndex + 1;
         if (nextIndex >= printableData.length) {
             setPreviewData(null); // Fecha se for a última
             return;
         }
     } else {
+        // Prev logic - not strictly needed by current flow but good to have
         nextIndex = (currentIndex - 1 + printableData.length) % printableData.length;
     }
 
@@ -225,7 +232,7 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
           <CardTitle className="font-headline text-2xl">Dados da Etiqueta</CardTitle>
         </div>
         <div className="flex items-center gap-2">
-            <Button onClick={handlePrint} size="sm" variant="outline">
+            <Button onClick={handlePrintAll} size="sm" variant="outline">
               <Printer className="mr-2 h-4 w-4" />
               Imprimir
             </Button>
@@ -267,7 +274,8 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
                       key={index} 
                       className={cn(
                         "hover:bg-muted/50",
-                        row.br === 'ATENÇÃO' && 'bg-yellow-200/50 dark:bg-yellow-800/50 font-bold'
+                        row.br === 'ATENÇÃO' && 'bg-yellow-200/50 dark:bg-yellow-800/50 font-bold',
+                        printedRows.has(getRowId(row)) && 'bg-gray-200 dark:bg-gray-700 opacity-60'
                       )}
                     >
                       <TableCell>{row.remessa}</TableCell>
@@ -303,7 +311,7 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
         </div>
         <Dialog open={!!previewData} onOpenChange={(isOpen) => !isOpen && setPreviewData(null)}>
           <DialogContent className="p-0 max-w-fit printable-area label-preview-dialog">
-            {previewData && <LabelPreview data={previewData} onNavigate={handleNavigate} onClose={() => setPreviewData(null)} />}
+            {previewData && <LabelPreview data={previewData} onNavigate={handleNavigate} onClose={() => setPreviewData(null)} onPrint={markAsPrinted} />}
           </DialogContent>
         </Dialog>
       </CardContent>

@@ -12,14 +12,16 @@ interface LabelPreviewProps {
   data: DataRow;
   onClose: () => void;
   onNavigate: (direction: 'next' | 'prev') => void;
+  onPrint: (row: DataRow) => void;
 }
 
-export default function LabelPreview({ data, onClose, onNavigate }: LabelPreviewProps) {
+export default function LabelPreview({ data, onClose, onNavigate, onPrint }: LabelPreviewProps) {
   const PX_PER_MM = 3.77952756;
   const [widthInMm, setWidthInMm] = useState(107);
   const [heightInMm, setHeightInMm] = useState(60);
   
   const handlePrint = () => {
+    onPrint(data);
     window.print();
     // Atraso para garantir que a impressão foi enviada antes de navegar
     setTimeout(() => {
