@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { RotateCcw, X, ChevronDown, ArrowUp, ArrowDown, FileDown } from 'lucide-react';
+import { RotateCcw, X, ChevronDown, ArrowUp, ArrowDown, FileDown, Printer } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   DropdownMenu,
@@ -45,6 +45,10 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
 
   const requestSort = (key: keyof DataRow, direction: SortDirection) => {
     setSortConfig({ key, direction });
+  };
+
+  const handlePrint = () => {
+    window.print();
   };
 
   const handleExport = () => {
@@ -184,11 +188,15 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
 
   return (
     <Card className="animate-fade-in shadow-lg">
-      <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 non-printable">
         <div>
           <CardTitle className="font-headline text-2xl">Dados da Etiqueta</CardTitle>
         </div>
         <div className="flex items-center gap-2">
+            <Button onClick={handlePrint} size="sm" variant="outline">
+              <Printer className="mr-2 h-4 w-4" />
+              Imprimir
+            </Button>
             <Button onClick={handleExport} size="sm" disabled={sortedAndFilteredData.length === 0} style={{ backgroundColor: '#006443', color: 'white' }}>
                 <FileDown className="mr-2 h-4 w-4" />
                 Exportar para Excel
@@ -203,7 +211,7 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
             </Button>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="printable-area">
         <ScrollArea className="border rounded-md h-[500px]">
           <Table>
             <TableHeader className="sticky top-0 bg-card z-10 shadow-sm">

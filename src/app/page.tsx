@@ -57,7 +57,9 @@ export default function Home() {
           { !data ? (
             <FileUploadCard onProcess={handleProcessing} isLoading={isLoading} />
           ) : (
-            <GeneratedTable data={data} onReset={handleReset} />
+            <div className="printable-area">
+              <GeneratedTable data={data} onReset={handleReset} />
+            </div>
           )}
         </div>
       </main>
