@@ -112,7 +112,7 @@ export default function LabelPreview({ data, onClose }: LabelPreviewProps) {
               </div>
             </div>
             
-            <div className="flex flex-col items-center w-full">
+            <div className="flex flex-col items-center w-full -space-y-1">
                 <div className="bg-white px-2">
                   <Barcode value={data.remessa || 'N/A'} width={2} height={40} displayValue={false} background="white" />
                 </div>
