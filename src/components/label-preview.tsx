@@ -5,7 +5,7 @@ import { DataRow } from "@/lib/types";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { Printer, X } from "lucide-react";
+import { Printer } from "lucide-react";
 import Barcode from 'react-barcode';
 
 interface LabelPreviewProps {
@@ -61,8 +61,7 @@ export default function LabelPreview({ data, onClose }: LabelPreviewProps) {
                 />
             </div>
              <Button variant="ghost" size="icon" onClick={onClose}>
-                <X className="h-4 w-4" />
-            </Button>
+             </Button>
         </div>
       </div>
 
@@ -70,25 +69,25 @@ export default function LabelPreview({ data, onClose }: LabelPreviewProps) {
       <div className="border border-black relative font-mono bg-white flex text-black label-container overflow-hidden" style={{ width: `${widthInPx}px`, height: `${heightInPx}px`}}>
         
         {/* Left Section */}
-        <div className="h-full flex flex-col justify-between items-center p-1 border-r border-black" style={{ width: '25%'}}>
+        <div className="h-full flex flex-col justify-between items-center p-1 border-r border-black" style={{ width: '28%'}}>
             <div className="w-full flex-grow flex items-center justify-center overflow-hidden">
-                 <div style={{ transform: 'rotate(-90deg)', transformOrigin: 'center', width: `${heightInPx * 0.4}px` }} className="flex flex-col items-center whitespace-nowrap -mt-4">
+                 <div style={{ transform: 'rotate(-90deg)', transformOrigin: 'center', width: `${heightInPx * 0.4}px` }} className="flex flex-col items-center whitespace-nowrap">
                     <div className="bg-white px-1">
-                      <Barcode value={data.remessa || 'N/A'} width={1} height={35} displayValue={false} background="white" />
+                      <Barcode value={data.remessa || 'N/A'} width={1} height={25} displayValue={false} background="white" />
                     </div>
-                    <span className="text-xs font-semibold -mt-2" style={{letterSpacing: '1px'}}>{data.remessa}</span>
+                    <span className="text-xs font-semibold" style={{letterSpacing: '1px'}}>{data.remessa}</span>
                 </div>
             </div>
             <div className="flex flex-col items-center text-center -space-y-1">
                 <span className="text-xs font-semibold">ORDEM</span>
-                <span className="text-4xl font-bold">{getOrderNumber()}</span>
+                <span className="text-5xl font-bold">{getOrderNumber()}</span>
                 <span className="text-xs font-semibold mt-1">CAIXAS</span>
-                <span className="text-3xl font-bold">{data.nCaixas}</span>
+                <span className="text-4xl font-bold">{data.nCaixas}</span>
             </div>
         </div>
 
         {/* Right Section */}
-        <div className="h-full flex flex-col p-2" style={{ width: '75%'}}>
+        <div className="h-full flex flex-col p-2" style={{ width: '72%'}}>
             {/* Top part */}
             <div className="flex-grow flex flex-col">
               <div className="flex justify-between items-start">
@@ -112,7 +111,7 @@ export default function LabelPreview({ data, onClose }: LabelPreviewProps) {
             {/* Bottom part */}
             <div className="flex flex-col items-center justify-end w-full flex-1">
                 <div className="text-lg font-bold whitespace-nowrap overflow-hidden text-ellipsis text-center w-full px-2">
-                  <span>{cliente}</span>
+                  <span className="px-2">{cliente}</span>
                 </div>
                 <div className="bg-white px-2 mt-1">
                   <Barcode value={data.remessa || 'N/A'} width={2} height={40} displayValue={false} background="white" />
