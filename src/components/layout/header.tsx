@@ -69,12 +69,10 @@ export default function Header() {
         </div>
         <div className="flex items-center gap-4">
           <ModeToggle />
-          {installPrompt && (
-            <Button onClick={handleInstallClick} variant="outline" size="icon">
-              <Download className="h-5 w-5" />
-              <span className="sr-only">Instalar Aplicativo</span>
-            </Button>
-          )}
+          <Button onClick={handleInstallClick} variant="outline" size="icon" disabled={!installPrompt}>
+            <Download className="h-5 w-5" />
+            <span className="sr-only">Instalar Aplicativo</span>
+          </Button>
         </div>
       </div>
     </header>
