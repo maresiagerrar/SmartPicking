@@ -5,7 +5,7 @@ import { DataRow } from "@/lib/types";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { Printer } from "lucide-react";
+import { Printer, X } from "lucide-react";
 import Barcode from 'react-barcode';
 
 interface LabelPreviewProps {
@@ -67,7 +67,8 @@ export default function LabelPreview({ data, onClose, onNavigate, onPrint }: Lab
                     className="w-20 h-8"
                 />
             </div>
-             <Button variant="ghost" size="icon" onClick={onClose}>
+             <Button variant="ghost" size="icon" onClick={onClose} className="hidden">
+                <X className="h-4 w-4" />
              </Button>
         </div>
       </div>
