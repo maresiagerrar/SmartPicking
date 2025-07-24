@@ -82,6 +82,7 @@
   }
   .printable-area {
     display: block;
+    visibility: visible;
     position: absolute;
     left: 0;
     top: 0;
@@ -113,6 +114,11 @@
   }
    .printable-area th > div > span {
     font-weight: bold;
+  }
+  .label-preview-dialog {
+    display: block !important;
+    box-shadow: none;
+    border: none;
   }
   
   @page {

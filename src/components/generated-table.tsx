@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { RotateCcw, X, ChevronDown, ArrowUp, ArrowDown, FileDown, Printer } from 'lucide-react';
+import { RotateCcw, X, ChevronDown, ArrowUp, ArrowDown, FileDown, Printer, Eye } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   DropdownMenu,
@@ -14,6 +14,8 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import LabelPreview from './label-preview';
 import { cn } from '@/lib/utils';
 import * as xlsx from 'xlsx';
 
@@ -33,6 +35,8 @@ type SortConfig = {
 export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
   const [filters, setFilters] = useState<FilterState>({});
   const [sortConfig, setSortConfig] = useState<SortConfig>(null);
+  const [previewData, setPreviewData] = useState<DataRow | null>(null);
+
 
   const handleFilterChange = (column: keyof DataRow, value: string) => {
     setFilters(prev => ({ ...prev, [column]: value }));
@@ -224,6 +228,7 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
                 <TableHead><HeaderCell column="ordem" label="ORDEM"/></TableHead>
                 <TableHead><HeaderCell column="qtdEtiqueta" label="QTD ETIQUETA"/></TableHead>
                 <TableHead><HeaderCell column="nCaixas" label="Nº CAIXAS"/></TableHead>
+                <TableHead className="non-printable">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -244,11 +249,19 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
                     <TableCell>{row.ordem}</TableCell>
                     <TableCell className="text-center">{row.qtdEtiqueta}</TableCell>
                     <TableCell className="text-center">{row.nCaixas}</TableCell>
+                    <TableCell className="non-printable">
+                      {row.br !== 'ATENÇÃO' && (
+                        <Button variant="outline" size="icon" onClick={() => setPreviewData(row)}>
+                           <Eye className="h-4 w-4" />
+                           <span className="sr-only">Visualizar Etiqueta</span>
+                        </Button>
+                      )}
+                    </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center h-24 text-muted-foreground">
+                  <TableCell colSpan={9} className="text-center h-24 text-muted-foreground">
                     Nenhum resultado encontrado.
                   </TableCell>
                 </TableRow>
@@ -256,6 +269,11 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
             </TableBody>
           </Table>
         </ScrollArea>
+        <Dialog open={!!previewData} onOpenChange={(isOpen) => !isOpen && setPreviewData(null)}>
+          <DialogContent className="max-w-4xl p-0 printable-area label-preview-dialog">
+            {previewData && <LabelPreview data={previewData} onClose={() => setPreviewData(null)} />}
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );
