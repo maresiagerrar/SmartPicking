@@ -13,23 +13,10 @@ interface LabelPreviewProps {
   onClose: () => void;
 }
 
-const BarcodePlaceholder = ({ value, width = 2, height = 50, vertical = false }: { value: string, width?: number, height?: number, vertical?: boolean }) => (
-    <div className={`flex flex-col items-center ${vertical ? 'rotate-180' : ''}`}>
-        <Barcode 
-            value={value} 
-            width={width} 
-            height={height} 
-            displayValue={false} 
-            margin={0} 
-        />
-    </div>
-);
-
-
 export default function LabelPreview({ data, onClose }: LabelPreviewProps) {
   const PX_PER_MM = 3.77952756;
-  const [widthInMm, setWidthInMm] = useState(100);
-  const [heightInMm, setHeightInMm] = useState(50);
+  const [widthInMm, setWidthInMm] = useState(107);
+  const [heightInMm, setHeightInMm] = useState(60);
   
   const handlePrint = () => {
     window.print();
@@ -44,6 +31,18 @@ export default function LabelPreview({ data, onClose }: LabelPreviewProps) {
       }
       return data.ordem;
   }
+  
+  const getClienteLines = () => {
+    const cliente = data.cliente || '';
+    // A simple logic to split client name, can be improved
+    const words = cliente.split(' ');
+    const line1 = words.slice(0, 3).join(' ');
+    const line2 = words.slice(3).join(' ');
+    return { line1, line2 };
+  }
+
+  const {line1: clienteLine1, line2: clienteLine2 } = getClienteLines();
+
 
   return (
     <div className="bg-white text-black p-4 max-w-fit mx-auto printable-area">
@@ -80,47 +79,54 @@ export default function LabelPreview({ data, onClose }: LabelPreviewProps) {
       </div>
 
       {/* Etiqueta */}
-      <div className="border border-black relative font-mono bg-white flex" style={{ width: `${widthInPx}px`, height: `${heightInPx}px`}}>
+      <div className="border border-black relative font-mono bg-white flex text-black" style={{ width: `${widthInPx}px`, height: `${heightInPx}px`}}>
         
         {/* Left Section */}
-        <div className="h-full flex flex-col items-center p-1 border-r border-black" style={{ width: '25%'}}>
-            <div className="flex-grow w-full flex items-center justify-center">
-                <div style={{ transform: 'rotate(-90deg)', transformOrigin: 'center' }} className="flex flex-col items-center">
-                    <Barcode value={data.remessa} width={1.5} height={40} displayValue={false} />
-                    <span className="text-xs -mt-1">{data.remessa}</span>
+        <div className="h-full flex flex-col justify-between items-center p-1 border-r border-black" style={{ width: '25%'}}>
+            <div className="w-full flex-grow flex items-center justify-center">
+                 <div style={{ transform: 'rotate(-90deg)', transformOrigin: 'center' }} className="flex flex-col items-center whitespace-nowrap">
+                    <div className="bg-white px-2">
+                      <Barcode value={data.remessa || 'N/A'} width={1} height={35} displayValue={false} background="white" />
+                    </div>
+                    <span className="text-xs font-semibold" style={{letterSpacing: '1px'}}>{data.remessa}</span>
                 </div>
             </div>
-            <div className="flex flex-col items-center text-center -mt-4">
+            <div className="flex flex-col items-center text-center -space-y-1">
                 <span className="text-xs font-semibold">ORDEM</span>
                 <span className="text-xl font-bold">{getOrderNumber()}</span>
-                <span className="text-xs font-semibold mt-2">CAIXAS</span>
+                <span className="text-xs font-semibold mt-1">CAIXAS</span>
                 <span className="text-lg font-bold">{data.nCaixas}</span>
             </div>
         </div>
 
         {/* Right Section */}
-        <div className="h-full flex flex-col p-2" style={{ width: '75%'}}>
-            <div className="flex justify-between items-start">
-                <span className="text-3xl font-bold">{data.data}</span>
-                <div className="flex items-baseline">
-                    <span className="text-lg font-semibold mr-2">ORDEM:</span>
-                    <span className="text-5xl font-bold">{getOrderNumber()}</span>
-                </div>
+        <div className="h-full flex flex-col p-2 justify-between" style={{ width: '75%'}}>
+            <div>
+              <div className="flex justify-between items-start">
+                  <span className="text-3xl font-bold">{data.data}</span>
+                  <div className="flex items-baseline gap-2">
+                      <span className="text-lg font-semibold">ORDEM:</span>
+                      <span className="text-5xl font-bold">{getOrderNumber()}</span>
+                  </div>
+              </div>
+              <div className="flex justify-between items-baseline -mt-2">
+                  <span className="text-3xl font-bold">{data.br}</span>
+                   <div className="flex items-baseline gap-2">
+                      <span className="text-lg font-semibold">CAIXAS:</span>
+                      <span className="text-2xl font-bold">{data.nCaixas}</span>
+                  </div>
+              </div>
+               <div className="mt-2 text-sm font-bold">
+                  <div>{clienteLine1}</div>
+                  <div>{clienteLine2}</div>
+              </div>
             </div>
-            <div className="flex justify-between items-baseline mt-1">
-                <span className="text-4xl font-bold">{data.br}</span>
-                 <div className="flex items-baseline">
-                    <span className="text-lg font-semibold mr-2">CAIXAS:</span>
-                    <span className="text-3xl font-bold">{data.nCaixas}</span>
-                </div>
-            </div>
-             <div className="mt-2">
-                <span className="text-lg font-bold">{data.cliente}</span>
-            </div>
-            <div className="flex-grow"></div>
+            
             <div className="flex flex-col items-center w-full">
-                <Barcode value={data.remessa} width={2.5} height={50} displayValue={false}/>
-                <span className="text-xl font-semibold tracking-wider">{data.remessa}</span>
+                <div className="bg-white px-2">
+                  <Barcode value={data.remessa || 'N/A'} width={2} height={40} displayValue={false} background="white" />
+                </div>
+                <span className="text-lg font-semibold tracking-widest">{data.remessa}</span>
             </div>
         </div>
       </div>
