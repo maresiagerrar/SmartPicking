@@ -248,7 +248,9 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
                       <TableCell>{row.cidade}</TableCell>
                       <TableCell>{row.cliente}</TableCell>
                       <TableCell>{row.ordem}</TableCell>
-                      <TableCell className="text-center">{String(row.qtdEtiqueta).padStart(2, '0')}</TableCell>
+                      <TableCell className="text-center">
+                        {row.br === 'ATENÇÃO' ? '' : String(row.qtdEtiqueta).padStart(2, '0')}
+                      </TableCell>
                       <TableCell className="text-center">{row.nCaixas}</TableCell>
                       <TableCell className="non-printable">
                         {row.br !== 'ATENÇÃO' && (
