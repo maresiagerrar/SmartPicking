@@ -5,7 +5,7 @@ import { DataRow } from "@/lib/types";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { Printer } from "lucide-react";
+import { Printer, X } from "lucide-react";
 import Barcode from 'react-barcode';
 
 interface LabelPreviewProps {
@@ -60,8 +60,11 @@ export default function LabelPreview({ data, onClose }: LabelPreviewProps) {
                     className="w-20 h-8"
                 />
             </div>
-            <Button variant="outline" size="icon" onClick={handlePrint} className="mr-2">
+            <Button variant="outline" size="icon" onClick={handlePrint}>
                 <Printer className="h-4 w-4" />
+            </Button>
+             <Button variant="ghost" size="icon" onClick={onClose}>
+                <X className="h-4 w-4" />
             </Button>
         </div>
       </div>
@@ -81,9 +84,9 @@ export default function LabelPreview({ data, onClose }: LabelPreviewProps) {
             </div>
             <div className="flex flex-col items-center text-center -space-y-1">
                 <span className="text-xs font-semibold">ORDEM</span>
-                <span className="text-xl font-bold">{getOrderNumber()}</span>
+                <span className="text-2xl font-bold">{getOrderNumber()}</span>
                 <span className="text-xs font-semibold mt-1">CAIXAS</span>
-                <span className="text-lg font-bold">{data.nCaixas}</span>
+                <span className="text-xl font-bold">{data.nCaixas}</span>
             </div>
         </div>
 
@@ -92,19 +95,19 @@ export default function LabelPreview({ data, onClose }: LabelPreviewProps) {
             {/* Top part */}
             <div className="flex-grow flex flex-col">
               <div className="flex justify-between items-start">
-                  <span className="text-xl font-bold">{data.data}</span>
+                  <span className="text-2xl font-bold">{data.data}</span>
                   <div className="flex items-baseline gap-2 text-right">
                       <div className="flex items-baseline gap-1 justify-end">
                           <span className="text-sm font-semibold">ORDEM:</span>
-                          <span className="text-4xl font-bold">{getOrderNumber()}</span>
+                          <span className="text-5xl font-bold">{getOrderNumber()}</span>
                       </div>
                   </div>
               </div>
-              <div className="flex-grow flex items-center justify-between">
-                  <span className="text-2xl font-bold">{data.br}</span>
+              <div className="flex items-center justify-between mt-[-8px]">
+                  <span className="text-3xl font-bold">{data.br}</span>
                   <div className="flex items-baseline gap-1 text-right">
                       <span className="text-sm font-semibold">CAIXAS:</span>
-                      <span className="text-lg font-bold">{data.nCaixas}</span>
+                      <span className="text-2xl font-bold">{data.nCaixas}</span>
                   </div>
               </div>
             </div>
@@ -117,7 +120,7 @@ export default function LabelPreview({ data, onClose }: LabelPreviewProps) {
                 <div className="bg-white px-2 mt-1">
                   <Barcode value={data.remessa || 'N/A'} width={2} height={40} displayValue={false} background="white" />
                 </div>
-                <span className="text-lg font-semibold tracking-widest">{data.remessa}</span>
+                <span className="text-lg font-semibold tracking-widest -mt-1">{data.remessa}</span>
             </div>
         </div>
       </div>
