@@ -32,29 +32,7 @@ export default function LabelPreview({ data, onClose }: LabelPreviewProps) {
       return data.ordem;
   }
   
-  const getClienteLines = () => {
-    const cliente = data.cliente || '';
-    const words = cliente.split(' ');
-    let line1 = '';
-    let line2 = '';
-
-    // A more robust way to split client name into two lines
-    if (words.length <= 3) {
-      line1 = words.join(' ');
-    } else {
-      let splitIndex = Math.ceil(words.length / 2);
-      // Try to balance the lines
-      while (words.slice(0, splitIndex).join(' ').length > 25 && splitIndex > 1) {
-          splitIndex--;
-      }
-      line1 = words.slice(0, splitIndex).join(' ');
-      line2 = words.slice(splitIndex).join(' ');
-    }
-    
-    return { line1, line2 };
-  }
-
-  const {line1: clienteLine1, line2: clienteLine2 } = getClienteLines();
+  const cliente = data.cliente || '';
 
 
   return (
@@ -92,7 +70,7 @@ export default function LabelPreview({ data, onClose }: LabelPreviewProps) {
       </div>
 
       {/* Etiqueta */}
-      <div className="border border-black relative font-mono bg-white flex text-black label-container" style={{ width: `${widthInPx}px`, height: `${heightInPx}px`}}>
+      <div className="border border-black relative font-mono bg-white flex text-black label-container overflow-hidden" style={{ width: `${widthInPx}px`, height: `${heightInPx}px`}}>
         
         {/* Left Section */}
         <div className="h-full flex flex-col justify-between items-center p-1 border-r border-black" style={{ width: '25%'}}>
@@ -129,9 +107,8 @@ export default function LabelPreview({ data, onClose }: LabelPreviewProps) {
                       <span className="text-2xl font-bold">{data.nCaixas}</span>
                   </div>
               </div>
-               <div className="mt-2 text-sm font-bold">
-                  <div>{clienteLine1}</div>
-                  <div>{clienteLine2}</div>
+               <div className="mt-2 text-sm font-bold whitespace-nowrap overflow-hidden text-ellipsis">
+                  <div>{cliente}</div>
               </div>
             </div>
             
