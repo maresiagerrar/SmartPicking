@@ -34,10 +34,23 @@ export default function LabelPreview({ data, onClose }: LabelPreviewProps) {
   
   const getClienteLines = () => {
     const cliente = data.cliente || '';
-    // A simple logic to split client name, can be improved
     const words = cliente.split(' ');
-    const line1 = words.slice(0, 3).join(' ');
-    const line2 = words.slice(3).join(' ');
+    let line1 = '';
+    let line2 = '';
+
+    // A more robust way to split client name into two lines
+    if (words.length <= 3) {
+      line1 = words.join(' ');
+    } else {
+      let splitIndex = Math.ceil(words.length / 2);
+      // Try to balance the lines
+      while (words.slice(0, splitIndex).join(' ').length > 25 && splitIndex > 1) {
+          splitIndex--;
+      }
+      line1 = words.slice(0, splitIndex).join(' ');
+      line2 = words.slice(splitIndex).join(' ');
+    }
+    
     return { line1, line2 };
   }
 
@@ -79,7 +92,7 @@ export default function LabelPreview({ data, onClose }: LabelPreviewProps) {
       </div>
 
       {/* Etiqueta */}
-      <div className="border border-black relative font-mono bg-white flex text-black" style={{ width: `${widthInPx}px`, height: `${heightInPx}px`}}>
+      <div className="border border-black relative font-mono bg-white flex text-black label-container" style={{ width: `${widthInPx}px`, height: `${heightInPx}px`}}>
         
         {/* Left Section */}
         <div className="h-full flex flex-col justify-between items-center p-1 border-r border-black" style={{ width: '25%'}}>
