@@ -88,10 +88,10 @@ export default function LabelPreview({ data, onClose }: LabelPreviewProps) {
         </div>
 
         {/* Right Section */}
-        <div className="h-full flex flex-col p-2 justify-between" style={{ width: '75%'}}>
-            <div>
+        <div className="h-full flex flex-col p-2 justify-end" style={{ width: '75%'}}>
+            <div className="flex-grow">
               <div className="flex justify-between items-start">
-                  <span className="text-base font-bold">{data.data}</span>
+                  <span className="text-xl font-bold">{data.data}</span>
                   <div className="flex items-baseline gap-2">
                       <span className="text-lg font-semibold">ORDEM:</span>
                       <span className="text-5xl font-bold">{getOrderNumber()}</span>
