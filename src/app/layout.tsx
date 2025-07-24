@@ -2,6 +2,7 @@ import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from '@/components/theme-provider';
+import Script from 'next/script';
 
 export const metadata: Metadata = {
   title: 'Smart Picking',
@@ -33,6 +34,15 @@ export default function RootLayout({
           {children}
           <Toaster />
         </ThemeProvider>
+         <Script id="service-worker-registration">
+          {`
+            if ("serviceWorker" in navigator) {
+              navigator.serviceWorker
+                .register("/sw.js")
+                .then((registration) => console.log("scope is: ", registration.scope));
+            }
+          `}
+        </Script>
       </body>
     </html>
   );
