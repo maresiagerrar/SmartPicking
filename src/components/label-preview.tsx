@@ -5,7 +5,7 @@ import { DataRow } from "@/lib/types";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { X, Printer } from "lucide-react";
+import { Printer } from "lucide-react";
 import Barcode from 'react-barcode';
 
 interface LabelPreviewProps {
@@ -63,9 +63,6 @@ export default function LabelPreview({ data, onClose }: LabelPreviewProps) {
             <Button variant="outline" size="icon" onClick={handlePrint} className="mr-2">
                 <Printer className="h-4 w-4" />
             </Button>
-            <Button variant="destructive" size="icon" onClick={onClose}>
-                <X className="h-4 w-4" />
-            </Button>
         </div>
       </div>
 
@@ -116,7 +113,7 @@ export default function LabelPreview({ data, onClose }: LabelPreviewProps) {
                 <div className="bg-white px-2">
                   <Barcode value={data.remessa || 'N/A'} width={2} height={40} displayValue={false} background="white" />
                 </div>
-                <span className="text-lg font-semibold tracking-widest -mt-4">{data.remessa}</span>
+                <span className="text-lg font-semibold tracking-widest -mt-1">{data.remessa}</span>
             </div>
         </div>
       </div>
