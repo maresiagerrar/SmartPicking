@@ -6,6 +6,7 @@ import { ThemeProvider } from '@/components/theme-provider';
 export const metadata: Metadata = {
   title: 'Smart Picking',
   description: 'Processamento e visualização de dados.',
+  manifest: '/manifest.json',
 };
 
 export default function RootLayout({

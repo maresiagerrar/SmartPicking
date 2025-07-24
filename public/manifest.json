@@ -1,0 +1,21 @@
+{
+  "name": "Data Distillery",
+  "short_name": "DataDistillery",
+  "description": "Processamento e visualização de dados para Smart Picking.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F2F7FC",
+  "theme_color": "#2487DE",
+  "icons": [
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
