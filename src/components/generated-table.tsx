@@ -270,7 +270,7 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
           </Table>
         </ScrollArea>
         <Dialog open={!!previewData} onOpenChange={(isOpen) => !isOpen && setPreviewData(null)}>
-          <DialogContent className="max-w-4xl p-0 printable-area label-preview-dialog">
+          <DialogContent className="p-0 printable-area label-preview-dialog">
             {previewData && <LabelPreview data={previewData} onClose={() => setPreviewData(null)} />}
           </DialogContent>
         </Dialog>
