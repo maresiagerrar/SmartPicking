@@ -72,7 +72,7 @@ export default function LabelPreview({ data, onClose }: LabelPreviewProps) {
         {/* Left Section */}
         <div className="h-full flex flex-col justify-between items-center p-1 border-r border-black" style={{ width: '25%'}}>
             <div className="w-full flex-grow flex items-center justify-center overflow-hidden">
-                 <div style={{ transform: 'rotate(-90deg)', transformOrigin: 'center' }} className="flex flex-col items-center whitespace-nowrap">
+                 <div style={{ transform: 'rotate(-90deg)', transformOrigin: 'center', width: `${heightInPx * 0.4}px` }} className="flex flex-col items-center whitespace-nowrap">
                     <div className="bg-white px-2">
                       <Barcode value={data.remessa || 'N/A'} width={1} height={35} displayValue={false} background="white" />
                     </div>
@@ -89,9 +89,9 @@ export default function LabelPreview({ data, onClose }: LabelPreviewProps) {
 
         {/* Right Section */}
         <div className="h-full flex flex-col p-2 justify-between" style={{ width: '75%'}}>
-            <div className="flex-grow">
+            <div>
               <div className="flex justify-between items-start">
-                  <span className="text-2xl font-bold">{data.data}</span>
+                  <span className="text-3xl font-bold">{data.data}</span>
                   <div className="flex items-baseline gap-2">
                       <span className="text-lg font-semibold">ORDEM:</span>
                       <span className="text-5xl font-bold">{getOrderNumber()}</span>
@@ -104,12 +104,12 @@ export default function LabelPreview({ data, onClose }: LabelPreviewProps) {
                       <span className="text-2xl font-bold">{data.nCaixas}</span>
                   </div>
               </div>
-               <div className="mt-2 text-lg font-bold whitespace-nowrap overflow-hidden text-ellipsis">
-                  <div>{cliente}</div>
-              </div>
             </div>
-            
+
             <div className="flex flex-col items-center w-full -space-y-1">
+                <div className="text-lg font-bold whitespace-nowrap overflow-hidden text-ellipsis text-center mb-1">
+                  <span>{cliente}</span>
+                </div>
                 <div className="bg-white px-2">
                   <Barcode value={data.remessa || 'N/A'} width={2} height={40} displayValue={false} background="white" />
                 </div>
