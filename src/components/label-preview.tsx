@@ -60,9 +60,6 @@ export default function LabelPreview({ data, onClose }: LabelPreviewProps) {
                     className="w-20 h-8"
                 />
             </div>
-            <Button variant="outline" size="icon" onClick={handlePrint}>
-                <Printer className="h-4 w-4" />
-            </Button>
              <Button variant="ghost" size="icon" onClick={onClose}>
                 <X className="h-4 w-4" />
             </Button>
@@ -75,18 +72,18 @@ export default function LabelPreview({ data, onClose }: LabelPreviewProps) {
         {/* Left Section */}
         <div className="h-full flex flex-col justify-between items-center p-1 border-r border-black" style={{ width: '25%'}}>
             <div className="w-full flex-grow flex items-center justify-center overflow-hidden">
-                 <div style={{ transform: 'rotate(-90deg)', transformOrigin: 'center', width: `${heightInPx * 0.4}px` }} className="flex flex-col items-center whitespace-nowrap">
+                 <div style={{ transform: 'rotate(-90deg)', transformOrigin: 'center', width: `${heightInPx * 0.4}px` }} className="flex flex-col items-center whitespace-nowrap -mt-4">
                     <div className="bg-white px-1">
                       <Barcode value={data.remessa || 'N/A'} width={1} height={35} displayValue={false} background="white" />
                     </div>
-                    <span className="text-xs font-semibold" style={{letterSpacing: '1px'}}>{data.remessa}</span>
+                    <span className="text-xs font-semibold -mt-2" style={{letterSpacing: '1px'}}>{data.remessa}</span>
                 </div>
             </div>
             <div className="flex flex-col items-center text-center -space-y-1">
                 <span className="text-xs font-semibold">ORDEM</span>
-                <span className="text-2xl font-bold">{getOrderNumber()}</span>
+                <span className="text-4xl font-bold">{getOrderNumber()}</span>
                 <span className="text-xs font-semibold mt-1">CAIXAS</span>
-                <span className="text-xl font-bold">{data.nCaixas}</span>
+                <span className="text-3xl font-bold">{data.nCaixas}</span>
             </div>
         </div>
 
@@ -103,7 +100,7 @@ export default function LabelPreview({ data, onClose }: LabelPreviewProps) {
                       </div>
                   </div>
               </div>
-              <div className="flex items-center justify-between mt-[-8px]">
+              <div className="flex justify-between items-center mt-[-8px]">
                   <span className="text-3xl font-bold">{data.br}</span>
                   <div className="flex items-baseline gap-1 text-right">
                       <span className="text-sm font-semibold">CAIXAS:</span>
@@ -113,7 +110,7 @@ export default function LabelPreview({ data, onClose }: LabelPreviewProps) {
             </div>
 
             {/* Bottom part */}
-            <div className="flex flex-col items-center w-full">
+            <div className="flex flex-col items-center justify-end w-full flex-1">
                 <div className="text-lg font-bold whitespace-nowrap overflow-hidden text-ellipsis text-center w-full px-2">
                   <span>{cliente}</span>
                 </div>
@@ -123,6 +120,14 @@ export default function LabelPreview({ data, onClose }: LabelPreviewProps) {
                 <span className="text-lg font-semibold tracking-widest -mt-1">{data.remessa}</span>
             </div>
         </div>
+      </div>
+      
+      {/* Print Button */}
+      <div className="mt-4 flex justify-center non-printable">
+        <Button onClick={handlePrint} size="lg" className="w-full" style={{backgroundColor: '#D40511'}}>
+          <Printer className="mr-2 h-5 w-5" />
+          Imprimir
+        </Button>
       </div>
     </div>
   );
