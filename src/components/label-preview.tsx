@@ -94,20 +94,18 @@ export default function LabelPreview({ data, onClose }: LabelPreviewProps) {
               <div className="flex justify-between items-start">
                   <span className="text-xl font-bold">{data.data}</span>
                   <div className="flex items-baseline gap-2 text-right">
-                      <div>
-                        <div className="flex items-baseline gap-1 justify-end">
-                            <span className="text-sm font-semibold">ORDEM:</span>
-                            <span className="text-4xl font-bold">{getOrderNumber()}</span>
-                        </div>
-                        <div className="flex items-baseline gap-1 justify-end -mt-2">
-                            <span className="text-sm font-semibold">CAIXAS:</span>
-                            <span className="text-lg font-bold">{data.nCaixas}</span>
-                        </div>
+                      <div className="flex items-baseline gap-1 justify-end">
+                          <span className="text-sm font-semibold">ORDEM:</span>
+                          <span className="text-4xl font-bold">{getOrderNumber()}</span>
                       </div>
                   </div>
               </div>
-              <div className="flex-grow flex items-center justify-start">
-                  <span className="text-2xl font-bold -mt-4">{data.br}</span>
+              <div className="flex-grow flex items-center justify-between">
+                  <span className="text-2xl font-bold">{data.br}</span>
+                  <div className="flex items-baseline gap-1 text-right">
+                      <span className="text-sm font-semibold">CAIXAS:</span>
+                      <span className="text-lg font-bold">{data.nCaixas}</span>
+                  </div>
               </div>
             </div>
 
