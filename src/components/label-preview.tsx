@@ -21,12 +21,16 @@ const BarcodePlaceholder = ({ value, width = 2, height = 50 }: { value: string, 
 
 
 export default function LabelPreview({ data, onClose }: LabelPreviewProps) {
-  const [width, setWidth] = useState(831);
-  const [height, setHeight] = useState(480);
+  const PX_PER_MM = 3.77952756;
+  const [widthInMm, setWidthInMm] = useState(220);
+  const [heightInMm, setHeightInMm] = useState(127);
   
   const handlePrint = () => {
     window.print();
   };
+
+  const widthInPx = widthInMm * PX_PER_MM;
+  const heightInPx = heightInMm * PX_PER_MM;
 
   return (
     <div className="bg-white text-black p-4 max-w-fit mx-auto printable-area">
@@ -34,22 +38,22 @@ export default function LabelPreview({ data, onClose }: LabelPreviewProps) {
         <h2 className="text-xl font-bold font-headline">Visualização da Etiqueta</h2>
         <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-                <Label htmlFor="width-input">Largura:</Label>
+                <Label htmlFor="width-input">Largura (mm):</Label>
                 <Input 
                     id="width-input" 
                     type="number" 
-                    value={width} 
-                    onChange={(e) => setWidth(Number(e.target.value))}
+                    value={widthInMm} 
+                    onChange={(e) => setWidthInMm(Number(e.target.value))}
                     className="w-20 h-8"
                 />
             </div>
              <div className="flex items-center gap-2">
-                <Label htmlFor="height-input">Altura:</Label>
+                <Label htmlFor="height-input">Altura (mm):</Label>
                 <Input 
                     id="height-input" 
                     type="number" 
-                    value={height} 
-                    onChange={(e) => setHeight(Number(e.target.value))}
+                    value={heightInMm} 
+                    onChange={(e) => setHeightInMm(Number(e.target.value))}
                     className="w-20 h-8"
                 />
             </div>
@@ -63,7 +67,7 @@ export default function LabelPreview({ data, onClose }: LabelPreviewProps) {
       </div>
 
       {/* Etiqueta */}
-      <div className="border border-black relative font-mono" style={{ width: `${width}px`, height: `${height}px`}}>
+      <div className="border border-black relative font-mono bg-white" style={{ width: `${widthInPx}px`, height: `${heightInPx}px`}}>
         
         {/* Vertical Line */}
         <div className="absolute top-[13px] h-[calc(100%-20px)] w-[2px] bg-black" style={{left: 'calc(100% - 167px)'}}></div>
@@ -87,7 +91,7 @@ export default function LabelPreview({ data, onClose }: LabelPreviewProps) {
             </div>
              <div className="absolute top-1/2 -translate-y-1/2 right-[10px] text-center">
                 <p className="text-2xl font-bold">QTD ETIQUETA:</p>
-                <p className="text-6xl font-bold mt-2">{data.qtdEtiqueta}</p>
+                <p className="text-6xl font-bold mt-2">{String(data.qtdEtiqueta).padStart(2, '0')}</p>
             </div>
         </div>
 

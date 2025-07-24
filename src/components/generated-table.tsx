@@ -215,62 +215,64 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
             </Button>
         </div>
       </CardHeader>
-      <CardContent className="printable-area">
-        <ScrollArea className="border rounded-md h-[500px]">
-          <Table>
-            <TableHeader className="sticky top-0 bg-card z-10 shadow-sm">
-              <TableRow>
-                <TableHead><HeaderCell column="remessa" label="REMESSA"/></TableHead>
-                <TableHead><HeaderCell column="data" label="DATA"/></TableHead>
-                <TableHead><HeaderCell column="br" label="BR" /></TableHead>
-                <TableHead><HeaderCell column="cidade" label="CIDADE"/></TableHead>
-                <TableHead><HeaderCell column="cliente" label="CLIENTE"/></TableHead>
-                <TableHead><HeaderCell column="ordem" label="ORDEM"/></TableHead>
-                <TableHead><HeaderCell column="qtdEtiqueta" label="QTD ETIQUETA"/></TableHead>
-                <TableHead><HeaderCell column="nCaixas" label="Nº CAIXAS"/></TableHead>
-                <TableHead className="non-printable">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sortedAndFilteredData.length > 0 ? (
-                sortedAndFilteredData.map((row, index) => (
-                  <TableRow 
-                    key={index} 
-                    className={cn(
-                      "hover:bg-muted/50",
-                      row.br === 'ATENÇÃO' && 'bg-yellow-200/50 dark:bg-yellow-800/50 font-bold'
-                    )}
-                  >
-                    <TableCell>{row.remessa}</TableCell>
-                    <TableCell>{row.data}</TableCell>
-                    <TableCell>{row.br}</TableCell>
-                    <TableCell>{row.cidade}</TableCell>
-                    <TableCell>{row.cliente}</TableCell>
-                    <TableCell>{row.ordem}</TableCell>
-                    <TableCell className="text-center">{row.qtdEtiqueta}</TableCell>
-                    <TableCell className="text-center">{row.nCaixas}</TableCell>
-                    <TableCell className="non-printable">
-                      {row.br !== 'ATENÇÃO' && (
-                        <Button variant="outline" size="icon" onClick={() => setPreviewData(row)}>
-                           <Eye className="h-4 w-4" />
-                           <span className="sr-only">Visualizar Etiqueta</span>
-                        </Button>
+      <CardContent>
+        <div className="printable-area">
+          <ScrollArea className="border rounded-md h-[500px]">
+            <Table>
+              <TableHeader className="sticky top-0 bg-card z-10 shadow-sm">
+                <TableRow>
+                  <TableHead><HeaderCell column="remessa" label="REMESSA"/></TableHead>
+                  <TableHead><HeaderCell column="data" label="DATA"/></TableHead>
+                  <TableHead><HeaderCell column="br" label="BR" /></TableHead>
+                  <TableHead><HeaderCell column="cidade" label="CIDADE"/></TableHead>
+                  <TableHead><HeaderCell column="cliente" label="CLIENTE"/></TableHead>
+                  <TableHead><HeaderCell column="ordem" label="ORDEM"/></TableHead>
+                  <TableHead><HeaderCell column="qtdEtiqueta" label="QTD ETIQUETA"/></TableHead>
+                  <TableHead><HeaderCell column="nCaixas" label="Nº CAIXAS"/></TableHead>
+                  <TableHead className="non-printable">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sortedAndFilteredData.length > 0 ? (
+                  sortedAndFilteredData.map((row, index) => (
+                    <TableRow 
+                      key={index} 
+                      className={cn(
+                        "hover:bg-muted/50",
+                        row.br === 'ATENÇÃO' && 'bg-yellow-200/50 dark:bg-yellow-800/50 font-bold'
                       )}
+                    >
+                      <TableCell>{row.remessa}</TableCell>
+                      <TableCell>{row.data}</TableCell>
+                      <TableCell>{row.br}</TableCell>
+                      <TableCell>{row.cidade}</TableCell>
+                      <TableCell>{row.cliente}</TableCell>
+                      <TableCell>{row.ordem}</TableCell>
+                      <TableCell className="text-center">{String(row.qtdEtiqueta).padStart(2, '0')}</TableCell>
+                      <TableCell className="text-center">{row.nCaixas}</TableCell>
+                      <TableCell className="non-printable">
+                        {row.br !== 'ATENÇÃO' && (
+                          <Button variant="outline" size="icon" onClick={() => setPreviewData(row)}>
+                             <Eye className="h-4 w-4" />
+                             <span className="sr-only">Visualizar Etiqueta</span>
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={9} className="text-center h-24 text-muted-foreground">
+                      Nenhum resultado encontrado.
                     </TableCell>
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={9} className="text-center h-24 text-muted-foreground">
-                    Nenhum resultado encontrado.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </ScrollArea>
+                )}
+              </TableBody>
+            </Table>
+          </ScrollArea>
+        </div>
         <Dialog open={!!previewData} onOpenChange={(isOpen) => !isOpen && setPreviewData(null)}>
-          <DialogContent className="p-0 printable-area label-preview-dialog">
+          <DialogContent className="p-0 max-w-fit printable-area label-preview-dialog">
             {previewData && <LabelPreview data={previewData} onClose={() => setPreviewData(null)} />}
           </DialogContent>
         </Dialog>
