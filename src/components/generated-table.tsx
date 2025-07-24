@@ -52,7 +52,12 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
   };
 
   const handlePrint = () => {
-    window.print();
+    if (sortedAndFilteredData.length > 0) {
+      const firstPrintableRow = sortedAndFilteredData.find(row => row.br !== 'ATENÇÃO');
+      if (firstPrintableRow) {
+        setPreviewData(firstPrintableRow);
+      }
+    }
   };
 
   const handleExport = () => {
