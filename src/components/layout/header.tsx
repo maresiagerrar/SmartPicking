@@ -1,6 +1,40 @@
+"use client";
+
+import { useEffect, useState } from 'react';
+import { Download } from 'lucide-react';
 import { ModeToggle } from "../mode-toggle";
+import { Button } from '../ui/button';
 
 export default function Header() {
+  const [installPrompt, setInstallPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleInstallClick = () => {
+    if (installPrompt) {
+      installPrompt.prompt();
+      installPrompt.userChoice.then((choiceResult: { outcome: string }) => {
+        if (choiceResult.outcome === 'accepted') {
+          console.log('User accepted the install prompt');
+        } else {
+          console.log('User dismissed the install prompt');
+        }
+        setInstallPrompt(null);
+      });
+    }
+  };
+
   return (
     <header className="py-6 px-4 md:px-6 border-b shadow-sm sticky top-0 z-20">
       <div className="container mx-auto flex items-center justify-between gap-4">
@@ -33,7 +67,15 @@ export default function Header() {
             </h1>
           </div>
         </div>
-        <ModeToggle />
+        <div className="flex items-center gap-4">
+          <ModeToggle />
+          {installPrompt && (
+            <Button onClick={handleInstallClick} variant="outline" size="icon">
+              <Download className="h-5 w-5" />
+              <span className="sr-only">Instalar Aplicativo</span>
+            </Button>
+          )}
+        </div>
       </div>
     </header>
   );
