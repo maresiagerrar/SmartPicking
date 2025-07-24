@@ -11,15 +11,20 @@ import Barcode from 'react-barcode';
 interface LabelPreviewProps {
   data: DataRow;
   onClose: () => void;
+  onNavigate: (direction: 'next' | 'prev') => void;
 }
 
-export default function LabelPreview({ data, onClose }: LabelPreviewProps) {
+export default function LabelPreview({ data, onClose, onNavigate }: LabelPreviewProps) {
   const PX_PER_MM = 3.77952756;
   const [widthInMm, setWidthInMm] = useState(107);
   const [heightInMm, setHeightInMm] = useState(60);
   
   const handlePrint = () => {
     window.print();
+    // Atraso para garantir que a impressão foi enviada antes de navegar
+    setTimeout(() => {
+        onNavigate('next');
+    }, 100); 
   };
 
   const widthInPx = widthInMm * PX_PER_MM;
@@ -125,7 +130,7 @@ export default function LabelPreview({ data, onClose }: LabelPreviewProps) {
       <div className="mt-4 flex justify-center non-printable">
         <Button onClick={handlePrint} size="lg" className="w-full" style={{backgroundColor: '#D40511'}}>
           <Printer className="mr-2 h-5 w-5" />
-          Imprimir
+          Imprimir e Avançar
         </Button>
       </div>
     </div>

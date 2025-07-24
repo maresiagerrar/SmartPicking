@@ -59,6 +59,29 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
       }
     }
   };
+  
+  const handleNavigate = (direction: 'next' | 'prev') => {
+    if (!previewData) return;
+    
+    const printableData = sortedAndFilteredData.filter(row => row.br !== 'ATENÇÃO');
+    const currentIndex = printableData.findIndex(item => item === previewData);
+
+    if (currentIndex === -1) return;
+
+    let nextIndex;
+    if (direction === 'next') {
+        nextIndex = (currentIndex + 1);
+        if (nextIndex >= printableData.length) {
+            setPreviewData(null); // Fecha se for a última
+            return;
+        }
+    } else {
+        nextIndex = (currentIndex - 1 + printableData.length) % printableData.length;
+    }
+
+    setPreviewData(printableData[nextIndex]);
+  };
+
 
   const handleExport = () => {
     const header = [
@@ -280,7 +303,7 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
         </div>
         <Dialog open={!!previewData} onOpenChange={(isOpen) => !isOpen && setPreviewData(null)}>
           <DialogContent className="p-0 max-w-fit printable-area label-preview-dialog">
-            {previewData && <LabelPreview data={previewData} onClose={() => setPreviewData(null)} />}
+            {previewData && <LabelPreview data={previewData} onNavigate={handleNavigate} onClose={() => setPreviewData(null)} />}
           </DialogContent>
         </Dialog>
       </CardContent>
