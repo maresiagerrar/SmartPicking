@@ -242,7 +242,7 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
            <CardTitle className="font-headline text-2xl">Dados da Etiqueta</CardTitle>
            <div className="flex items-center space-x-2">
             <Switch id="agrupado-switch" checked={showParceriaData} onCheckedChange={setShowParceriaData} />
-            <Label htmlFor="agrupado-switch" variant="toggle">Parceria</Label>
+            <Label htmlFor="agrupado-switch" variant="toggle">Parceria Bruta</Label>
           </div>
         </div>
         <div className="flex items-center gap-2">
