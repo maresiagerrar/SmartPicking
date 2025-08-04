@@ -107,12 +107,15 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
 
         jsonSheet.forEach((row: any) => {
           const remessa = row[0]; // Column A
-          const sku = row[7]; // Column H
+          const skuH = row[7]; // Column H
+          const skuI = row[8]; // Column I
           const cidadeColumn = row[10];      // Column K
           const clienteColumn = row[11];   // Column L
     
           // Ensure remessa is always treated as a string and trimmed.
           if (remessa !== null && (cidadeColumn || clienteColumn)) {
+            // Prioritize SKU from column I, fallback to column H
+            const sku = skuI || skuH; 
             excelData.push({
               remessa: String(remessa).trim(),
               sku: sku ? String(sku).trim() : 'N/A',
