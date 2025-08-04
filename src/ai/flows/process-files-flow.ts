@@ -39,7 +39,7 @@ export type ProcessFilesOutput = z.infer<typeof ProcessFilesOutputSchema>;
 
 export async function processFiles(input: ProcessFilesInput): Promise<ProcessFilesOutput> {
     // 1. Parse TXT file
-    const txtData: Omit<DataRow, 'cidade' | 'cliente' | 'nCaixas' | 'parceria'>[] & { qtdEtiqueta: number } = [];
+    const txtData: Omit<DataRow, 'cidade' | 'cliente' | 'nCaixas' | 'parceria'>[] & { qtdEtiqueta: number }[] = [];
     const txtLines = input.txtContent.split(/\r?\n/);
     
     txtLines.forEach((line, index) => {
@@ -139,7 +139,9 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
     });
 
     // 3. Merge data
-    const mergedData: DataRow[] = [];
+    const mainData: DataRow[] = [];
+    const parceriaData: DataRow[] = [];
+
     const clienteMapping: Record<string, string> = {
       "BR495477": "SJBV - LEME",
       "BR495480": "SJBV - PIRASSUNUNGA",
@@ -156,14 +158,11 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
       const parceriaItems = excelItems.filter(item => parceriaSkuSet.has(item.sku));
       
       const qtdEtiquetasBase = txtItem.qtdEtiqueta > 0 ? txtItem.qtdEtiqueta : 1;
-      const totalEtiquetas = qtdEtiquetasBase + parceriaItems.length;
-      const totalEtiquetasString = String(totalEtiquetas).padStart(2, '0');
+      const totalEtiquetasString = String(qtdEtiquetasBase).padStart(2, '0');
       
-      let caixaCounter = 0;
-
-      // Generate base labels
+      // Generate base labels for the main list
       for (let i = 0; i < qtdEtiquetasBase; i++) {
-        caixaCounter++;
+        const caixaCounter = i + 1;
         const firstExcelItem = excelItems.length > 0 ? excelItems[0] : null;
 
         let cliente = firstExcelItem?.cliente || 'N/A';
@@ -171,25 +170,24 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
             cliente = clienteMapping[txtItem.br];
         }
         
-        mergedData.push({
+        mainData.push({
             ...txtItem,
             cidade: firstExcelItem?.cidade || 'N/A',
             cliente: cliente,
-            qtdEtiqueta: totalEtiquetas,
+            qtdEtiqueta: qtdEtiquetasBase,
             nCaixas: `${String(caixaCounter).padStart(2, '0')}/${totalEtiquetasString}`,
             parceria: isParceria ? 'Sim' : 'Não',
         });
       }
 
-      // Generate partnership labels
-      parceriaItems.forEach((parceriaItem) => {
-          caixaCounter++;
-          mergedData.push({
+      // Generate partnership labels for the separate partnership list
+      parceriaItems.forEach((parceriaItem, parceriaIndex) => {
+          parceriaData.push({
               ...txtItem,
               cidade: parceriaItem.cidade,
               cliente: `PARCERIA BRUTA - ${parceriaItem.cliente}`,
-              qtdEtiqueta: totalEtiquetas,
-              nCaixas: `${String(caixaCounter).padStart(2, '0')}/${totalEtiquetasString}`,
+              qtdEtiqueta: parceriaItems.length,
+              nCaixas: `${String(parceriaIndex + 1).padStart(2, '0')}/${String(parceriaItems.length).padStart(2, '0')}`,
               parceria: "Sim",
           });
       });
@@ -197,7 +195,7 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
       // Check if the next item has a different BR code and it's not the last item
       const nextTxtItem = txtData[index + 1];
       if (nextTxtItem && nextTxtItem.br !== txtItem.br) {
-        mergedData.push({
+        mainData.push({
             remessa: '',
             data: '',
             br: 'ATENÇÃO',
@@ -211,5 +209,5 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
       }
     });
 
-    return { mainData: mergedData, parceriaData: [] }; // parceriaData is no longer used separately
+    return { mainData, parceriaData };
 }
