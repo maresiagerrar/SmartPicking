@@ -1,3 +1,4 @@
+
 export type DataRow = {
   remessa: string;
   data: string;
@@ -7,4 +8,9 @@ export type DataRow = {
   ordem: string;
   qtdEtiqueta: number | string;
   nCaixas: string;
+};
+
+export type ParceriaBrutaDataRow = {
+  sku: string;
+  material: string;
 };

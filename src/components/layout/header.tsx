@@ -1,9 +1,11 @@
+
 "use client";
 
 import { useEffect, useState } from 'react';
-import { Download } from 'lucide-react';
+import { Download, ChevronsRight } from 'lucide-react';
 import { ModeToggle } from "../mode-toggle";
 import { Button } from '../ui/button';
+import Link from 'next/link';
 
 export default function Header() {
   const [installPrompt, setInstallPrompt] = useState<any>(null);
@@ -56,18 +58,26 @@ export default function Header() {
               <path d="M82.7594 0.313599L76.6209 8.6534H66.8968C66.8968 8.6534 73.0373 0.313599 73.0404 0.313599H82.7594Z" fill="#D40511"/>
             </g>
             <defs>
-              <clipPath id="clip0_8246_84949">
+              <clipPath id="clip0_8246_84949)">
                 <rect width="100" height="14.142" fill="white" transform="translate(0 0.313599)"/>
               </clipPath>
             </defs>
           </svg>
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold font-headline dark:text-black">
-              Smart Picking
-            </h1>
+            <Link href="/" passHref>
+              <h1 className="text-2xl md:text-3xl font-bold font-headline dark:text-black cursor-pointer">
+                Smart Picking
+              </h1>
+            </Link>
           </div>
         </div>
         <div className="flex items-center gap-4">
+          <Link href="/parceria-bruta" passHref>
+             <Button variant="outline">
+                Parceria Bruta
+                <ChevronsRight className="ml-2 h-4 w-4" />
+             </Button>
+          </Link>
           <ModeToggle />
           <Button onClick={handleInstallClick} variant="outline" size="icon" disabled={!installPrompt}>
             <Download className="h-5 w-5" />

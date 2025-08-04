@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -57,6 +58,7 @@ export default function Home() {
   
   const handleReset = () => {
     setData(null);
+    history.pushState(null, '', '/');
   };
 
   return (

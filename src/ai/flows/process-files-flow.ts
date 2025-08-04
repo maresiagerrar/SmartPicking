@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview Processes uploaded text and Excel files to extract structured data.
@@ -62,7 +63,7 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
           // Find "Linha :" two lines below
           if (txtLines[remessaLineIndex + 2] && txtLines[remessaLineIndex + 2].includes('Linha :')) {
             const linhaParts = txtLines[remessaLineIndex + 2].split('Linha :');
-            if(linhaParts.length > 1) {
+            if(linhaParts.length > 1 && linhaParts[1].trim()) {
                const linhaContent = linhaParts[1].trim().split(/\s+/);
                if(linhaContent.length > 1) {
                   ordem = linhaContent[1]; 
