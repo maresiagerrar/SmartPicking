@@ -18,6 +18,8 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import LabelPreview from './label-preview';
 import { cn } from '@/lib/utils';
 import * as xlsx from 'xlsx';
+import { Switch } from './ui/switch';
+import { Label } from './ui/label';
 
 
 interface GeneratedTableProps {
@@ -232,8 +234,12 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
   return (
     <Card className="animate-fade-in shadow-lg">
       <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 non-printable">
-        <div>
+        <div className="flex items-center gap-4">
           <CardTitle className="font-headline text-2xl">Dados da Etiqueta</CardTitle>
+          <div className="flex items-center space-x-2">
+            <Switch id="special-toggle" />
+            <Label htmlFor="special-toggle" variant="toggle">Agrupado</Label>
+          </div>
         </div>
         <div className="flex items-center gap-2">
             <Button onClick={handlePrintAll} size="sm" variant="outline">
