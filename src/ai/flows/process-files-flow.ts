@@ -140,7 +140,6 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
 
     // 3. Merge data
     const mergedData: DataRow[] = [];
-    const parceriaData: DataRow[] = [];
     const clienteMapping: Record<string, string> = {
       "BR495477": "SJBV - LEME",
       "BR495480": "SJBV - PIRASSUNUNGA",
@@ -153,50 +152,47 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
 
     txtData.forEach((txtItem, index) => {
       const excelItems = excelDataMap.get(txtItem.remessa) || [];
-      
-      const qtdEtiquetas = txtItem.qtdEtiqueta > 0 ? txtItem.qtdEtiqueta : 1;
-      const totalEtiquetasString = String(qtdEtiquetas).padStart(2, '0');
-      
       const isParceria = excelItems.some(item => parceriaSkuSet.has(item.sku));
-      const parceria = isParceria ? 'Sim' : 'Não';
-      
       const parceriaItems = excelItems.filter(item => parceriaSkuSet.has(item.sku));
-      parceriaItems.forEach((parceriaItem, pIndex) => {
-          parceriaData.push({
-              ...txtItem,
-              cidade: parceriaItem.cidade,
-              cliente: `PARCERIA BRUTA - ${parceriaItem.cliente}`,
-              qtdEtiqueta: 1,
-              nCaixas: `${String(pIndex + 1).padStart(2, '0')}/${String(parceriaItems.length).padStart(2, '0')}`,
-              parceria: "Sim",
-          });
-      });
+      
+      const qtdEtiquetasBase = txtItem.qtdEtiqueta > 0 ? txtItem.qtdEtiqueta : 1;
+      const totalEtiquetas = qtdEtiquetasBase + parceriaItems.length;
+      const totalEtiquetasString = String(totalEtiquetas).padStart(2, '0');
+      
+      let caixaCounter = 0;
 
-
-      for (let i = 0; i < qtdEtiquetas; i++) {
+      // Generate base labels
+      for (let i = 0; i < qtdEtiquetasBase; i++) {
+        caixaCounter++;
         const firstExcelItem = excelItems.length > 0 ? excelItems[0] : null;
 
-        // Start with client from excel, then override with mapping if it exists
         let cliente = firstExcelItem?.cliente || 'N/A';
         if (clienteMapping[txtItem.br]) {
             cliente = clienteMapping[txtItem.br];
         }
         
-        const baseItem = {
+        mergedData.push({
             ...txtItem,
             cidade: firstExcelItem?.cidade || 'N/A',
             cliente: cliente,
-            qtdEtiqueta: qtdEtiquetas,
-            parceria: parceria,
-        };
-        
-        const nCaixas = `${String(i + 1).padStart(2, '0')}/${totalEtiquetasString}`;
-
-        mergedData.push({
-            ...baseItem,
-            nCaixas: nCaixas,
+            qtdEtiqueta: totalEtiquetas,
+            nCaixas: `${String(caixaCounter).padStart(2, '0')}/${totalEtiquetasString}`,
+            parceria: isParceria ? 'Sim' : 'Não',
         });
       }
+
+      // Generate partnership labels
+      parceriaItems.forEach((parceriaItem) => {
+          caixaCounter++;
+          mergedData.push({
+              ...txtItem,
+              cidade: parceriaItem.cidade,
+              cliente: `PARCERIA BRUTA - ${parceriaItem.cliente}`,
+              qtdEtiqueta: totalEtiquetas,
+              nCaixas: `${String(caixaCounter).padStart(2, '0')}/${totalEtiquetasString}`,
+              parceria: "Sim",
+          });
+      });
 
       // Check if the next item has a different BR code and it's not the last item
       const nextTxtItem = txtData[index + 1];
@@ -215,5 +211,5 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
       }
     });
 
-    return { mainData: mergedData, parceriaData: parceriaData };
+    return { mainData: mergedData, parceriaData: [] }; // parceriaData is no longer used separately
 }

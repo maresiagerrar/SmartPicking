@@ -12,7 +12,6 @@ import { useToast } from "@/hooks/use-toast";
 
 export default function Home() {
   const [data, setData] = useState<DataRow[] | null>(null);
-  const [parceriaData, setParceriaData] = useState<DataRow[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   
@@ -38,7 +37,6 @@ export default function Home() {
       
       if (result && result.mainData && result.mainData.length > 0) {
         setData(result.mainData);
-        setParceriaData(result.parceriaData);
       } else {
         toast({
           title: "Nenhum dado encontrado",
@@ -60,7 +58,6 @@ export default function Home() {
   
   const handleReset = () => {
     setData(null);
-    setParceriaData(null);
     history.pushState(null, '', '/');
   };
 
@@ -73,7 +70,7 @@ export default function Home() {
             <FileUploadCard onProcess={handleProcessing} isLoading={isLoading} />
           ) : (
             <div className="printable-area">
-              <GeneratedTable data={data} parceriaData={parceriaData || []} onReset={handleReset} />
+              <GeneratedTable data={data} onReset={handleReset} />
             </div>
           )}
         </div>

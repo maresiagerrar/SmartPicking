@@ -19,13 +19,9 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import LabelPreview from './label-preview';
 import { cn } from '@/lib/utils';
 import * as xlsx from 'xlsx';
-import { Switch } from './ui/switch';
-import { Label } from './ui/label';
-
 
 interface GeneratedTableProps {
   data: DataRow[];
-  parceriaData: DataRow[];
   onReset: () => void;
 }
 
@@ -36,14 +32,11 @@ type SortConfig = {
     direction: SortDirection;
 } | null;
 
-export default function GeneratedTable({ data, parceriaData, onReset }: GeneratedTableProps) {
+export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
   const [filters, setFilters] = useState<FilterState>({});
   const [sortConfig, setSortConfig] = useState<SortConfig>(null);
   const [previewData, setPreviewData] = useState<DataRow | null>(null);
   const [printedRows, setPrintedRows] = useState<Set<string>>(new Set());
-  const [showParceria, setShowParceria] = useState(false);
-
-  const activeData = useMemo(() => showParceria ? parceriaData : data, [showParceria, data, parceriaData]);
 
   const getRowId = (row: DataRow) => `${row.remessa}-${row.ordem}-${row.nCaixas}`;
 
@@ -137,7 +130,7 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
 
   const sortedAndFilteredData = useMemo(() => {
     const activeFilters = Object.entries(filters).filter(([, value]) => value);
-    let processableData = [...activeData];
+    let processableData = [...data];
 
     // Filtering
     if (activeFilters.length > 0) {
@@ -183,7 +176,7 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
     }
 
     return processableData;
-  }, [activeData, filters, sortConfig]);
+  }, [data, filters, sortConfig]);
   
   const HeaderCell = ({ column, label }: { column: keyof DataRow, label: string }) => {
     const [inputValue, setInputValue] = useState(filters[column] || '');
@@ -239,13 +232,7 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
   return (
     <Card className="animate-fade-in shadow-lg">
       <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 non-printable">
-        <div className="flex items-center gap-4">
-          <CardTitle className="font-headline text-2xl">Dados da Etiqueta</CardTitle>
-          <div className="flex items-center space-x-2">
-            <Switch id="special-toggle" checked={showParceria} onCheckedChange={setShowParceria} />
-            <Label htmlFor="special-toggle" variant="toggle">Parceria</Label>
-          </div>
-        </div>
+        <CardTitle className="font-headline text-2xl">Dados da Etiqueta</CardTitle>
         <div className="flex items-center gap-2">
             <Button onClick={handlePrintAll} size="sm" variant="outline">
               <Printer className="mr-2 h-4 w-4" />
