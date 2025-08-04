@@ -154,11 +154,11 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
 
     txtData.forEach((txtItem, index) => {
       const excelItems = excelDataMap.get(txtItem.remessa) || [];
-      const isParceria = excelItems.some(item => parceriaSkuSet.has(item.sku));
-      const parceriaItems = excelItems.filter(item => parceriaSkuSet.has(item.sku));
+      const parceriaItems = excelItems.filter(item => parceriaSkuSet.has(item.sku) && item.cliente !== 'N/A');
+      const isParceria = parceriaItems.length > 0;
       
       const qtdEtiquetasBase = txtItem.qtdEtiqueta > 0 ? txtItem.qtdEtiqueta : 1;
-      const totalEtiquetasString = String(qtdEtiquetasBase).padStart(2, '0');
+      const totalEtiquetasBaseString = String(qtdEtiquetasBase).padStart(2, '0');
       
       // Generate base labels for the main list
       for (let i = 0; i < qtdEtiquetasBase; i++) {
@@ -175,22 +175,26 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
             cidade: firstExcelItem?.cidade || 'N/A',
             cliente: cliente,
             qtdEtiqueta: qtdEtiquetasBase,
-            nCaixas: `${String(caixaCounter).padStart(2, '0')}/${totalEtiquetasString}`,
+            nCaixas: `${String(caixaCounter).padStart(2, '0')}/${totalEtiquetasBaseString}`,
             parceria: isParceria ? 'Sim' : 'Não',
         });
       }
 
       // Generate partnership labels for the separate partnership list
-      parceriaItems.forEach((parceriaItem, parceriaIndex) => {
-          parceriaData.push({
-              ...txtItem,
-              cidade: parceriaItem.cidade,
-              cliente: `PARCERIA BRUTA - ${parceriaItem.cliente}`,
-              qtdEtiqueta: parceriaItems.length,
-              nCaixas: `${String(parceriaIndex + 1).padStart(2, '0')}/${String(parceriaItems.length).padStart(2, '0')}`,
-              parceria: "Sim",
+      if (isParceria) {
+          const totalEtiquetasParceriaString = String(parceriaItems.length).padStart(2, '0');
+          parceriaItems.forEach((parceriaItem, parceriaIndex) => {
+              parceriaData.push({
+                  ...txtItem,
+                  cidade: parceriaItem.cidade,
+                  cliente: `PARCERIA BRUTA - ${parceriaItem.cliente}`,
+                  qtdEtiqueta: parceriaItems.length,
+                  nCaixas: `${String(parceriaIndex + 1).padStart(2, '0')}/${totalEtiquetasParceriaString}`,
+                  parceria: "Sim",
+              });
           });
-      });
+      }
+
 
       // Check if the next item has a different BR code and it's not the last item
       const nextTxtItem = txtData[index + 1];
