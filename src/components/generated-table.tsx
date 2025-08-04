@@ -100,6 +100,7 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
       "ORDEM",
       "QTD ETIQUETA",
       "Nº CAIXAS",
+      "PARCERIA"
     ];
 
     const body = sortedAndFilteredData.map(row => ({
@@ -110,7 +111,8 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
       "CLIENTE": row.cliente,
       "ORDEM": row.ordem,
       "QTD ETIQUETA": row.qtdEtiqueta,
-      "Nº CAIXAS": row.nCaixas
+      "Nº CAIXAS": row.nCaixas,
+      "PARCERIA": row.parceria
     }));
     
     const worksheet = xlsx.utils.json_to_sheet(body, { header: header });
@@ -264,6 +266,7 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
                   <TableHead><HeaderCell column="ordem" label="ORDEM"/></TableHead>
                   <TableHead><HeaderCell column="qtdEtiqueta" label="QTD ETIQUETA"/></TableHead>
                   <TableHead><HeaderCell column="nCaixas" label="Nº CAIXAS"/></TableHead>
+                  <TableHead><HeaderCell column="parceria" label="PARCERIA"/></TableHead>
                   <TableHead className="non-printable">Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -288,6 +291,16 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
                         {row.br === 'ATENÇÃO' ? '' : String(row.qtdEtiqueta).padStart(2, '0')}
                       </TableCell>
                       <TableCell className="text-center">{row.nCaixas}</TableCell>
+                      <TableCell>
+                         <span className={cn(
+                            "px-2 py-1 rounded-full text-xs font-medium",
+                             row.parceria === 'Sim' && 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+                             row.parceria === 'Não' && 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+                             row.br === 'ATENÇÃO' && 'opacity-0'
+                         )}>
+                            {row.parceria}
+                         </span>
+                      </TableCell>
                       <TableCell className="non-printable">
                         {row.br !== 'ATENÇÃO' && (
                           <Button variant="outline" size="icon" onClick={() => setPreviewData(row)}>
@@ -300,7 +313,7 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center h-24 text-muted-foreground">
+                    <TableCell colSpan={10} className="text-center h-24 text-muted-foreground">
                       Nenhum resultado encontrado.
                     </TableCell>
                   </TableRow>

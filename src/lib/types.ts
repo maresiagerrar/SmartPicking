@@ -8,6 +8,7 @@ export type DataRow = {
   ordem: string;
   qtdEtiqueta: number | string;
   nCaixas: string;
+  parceria: string;
 };
 
 export type ParceriaBrutaDataRow = {

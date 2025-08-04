@@ -11,6 +11,7 @@
 import { z } from 'zod';
 import * as xlsx from 'xlsx';
 import { DataRow } from '@/lib/types';
+import { parceriaBrutaData } from '@/lib/parceria-bruta-data';
 
 const ProcessFilesInputSchema = z.object({
   txtContent: z.string().describe('The content of the uploaded TXT file.'),
@@ -27,6 +28,7 @@ const DataRowSchema = z.object({
   ordem: z.string(),
   qtdEtiqueta: z.union([z.number(), z.string()]),
   nCaixas: z.string(),
+  parceria: z.string(),
 });
 
 const ProcessFilesOutputSchema = z.array(DataRowSchema);
@@ -34,7 +36,7 @@ export type ProcessFilesOutput = z.infer<typeof ProcessFilesOutputSchema>;
 
 export async function processFiles(input: ProcessFilesInput): Promise<ProcessFilesOutput> {
     // 1. Parse TXT file
-    const txtData: Omit<DataRow, 'cidade' | 'cliente' | 'nCaixas' | 'qtdEtiqueta'>[] & { qtdEtiqueta: number } = [];
+    const txtData: Omit<DataRow, 'cidade' | 'cliente' | 'nCaixas' | 'qtdEtiqueta' | 'parceria'>[] & { qtdEtiqueta: number } = [];
     const txtLines = input.txtContent.split(/\r?\n/);
     
     txtLines.forEach(line => {
@@ -95,7 +97,7 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
     });
 
     // 2. Parse Excel file
-    const excelData: Pick<DataRow, 'remessa' | 'cidade' | 'cliente'>[] = [];
+    const excelData: Pick<DataRow, 'remessa' | 'cidade' | 'cliente'> & { sku: string }[] = [];
     try {
         const workbook = xlsx.read(Buffer.from(input.excelContent, 'base64'), { type: 'buffer' });
         const sheetName = workbook.SheetNames[0];
@@ -104,12 +106,14 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
 
         jsonSheet.forEach((row: any) => {
           const remessa = row[0]; // Column A
+          const sku = row[7]; // Column H
           const cidadeColumn = row[10];      // Column K
           const clienteColumn = row[11];   // Column L
     
           if (remessa && (cidadeColumn || clienteColumn)) {
             excelData.push({
               remessa: String(remessa).trim(),
+              sku: String(sku).trim(),
               cidade: cidadeColumn ? String(cidadeColumn) : 'N/A',
               cliente: clienteColumn ? String(clienteColumn) : 'N/A',
             });
@@ -119,6 +123,9 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
         console.error("Error parsing excel file", e);
         // If excel parsing fails, continue with just txt data.
     }
+    
+    // Create a Set of partnership SKUs for efficient lookup
+    const parceriaSkuSet = new Set(parceriaBrutaData.map(item => item.sku));
 
     // 3. Merge data
     const mergedData: DataRow[] = [];
@@ -145,11 +152,14 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
             cliente = clienteMapping[txtItem.br];
         }
 
+        const parceria = excelItem && parceriaSkuSet.has(excelItem.sku) ? 'Sim' : 'Não';
+
         const baseItem = {
             ...txtItem,
             cidade: excelItem?.cidade || 'N/A',
             cliente: cliente,
             qtdEtiqueta: qtdEtiquetas,
+            parceria: parceria,
         };
         
         const nCaixas = `${String(i + 1).padStart(2, '0')}/${totalEtiquetasString}`;
@@ -172,6 +182,7 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
             ordem: '',
             qtdEtiqueta: '',
             nCaixas: '',
+            parceria: '',
         });
       }
     });
