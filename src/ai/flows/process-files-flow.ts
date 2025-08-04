@@ -37,38 +37,13 @@ const ProcessFilesOutputSchema = z.object({
 });
 export type ProcessFilesOutput = z.infer<typeof ProcessFilesOutputSchema>;
 
-function insertAttentionRows(data: DataRow[]): DataRow[] {
-    if (data.length === 0) return [];
-    
-    const result: DataRow[] = [];
-    for (let i = 0; i < data.length; i++) {
-        result.push(data[i]);
-        const currentBr = data[i].br;
-        const nextBr = data[i + 1]?.br;
-
-        // Check if the next item exists, has a non-empty br, is not an attention row, and has a different br code
-        if (nextBr && nextBr.trim() !== '' && nextBr !== 'ATENÇÃO' && currentBr !== nextBr) {
-             result.push({
-                remessa: '',
-                data: '',
-                br: 'ATENÇÃO',
-                cidade: '',
-                cliente: `PROXIMO ${nextBr}`,
-                ordem: '',
-                qtdEtiqueta: '',
-                nCaixas: '',
-                parceria: '',
-            });
-        }
-    }
-    return result;
-}
+type TxtData = Omit<DataRow, 'cidade' | 'cliente' | 'nCaixas' | 'parceria'> & { qtdEtiqueta: number };
+type ExcelData = Pick<DataRow, 'remessa' | 'cidade' | 'cliente'> & { sku: string };
 
 
-export async function processFiles(input: ProcessFilesInput): Promise<ProcessFilesOutput> {
-    // 1. Parse TXT file
-    const txtData: Omit<DataRow, 'cidade' | 'cliente' | 'nCaixas' | 'parceria'>[] & { qtdEtiqueta: number }[] = [];
-    const txtLines = input.txtContent.split(/\r?\n/);
+function parseTxtFile(txtContent: string): TxtData[] {
+    const txtData: TxtData[] = [];
+    const txtLines = txtContent.split(/\r?\n/);
     
     txtLines.forEach((line, index) => {
       if (line.trim().startsWith('Rem :')) {
@@ -80,26 +55,20 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
         let qtdEtiqueta = 0;
         let br = 'N/A';
 
-        // Search for details within the block of lines for this "Remessa"
         let currentIndex = index + 1;
         while(currentIndex < txtLines.length && !txtLines[currentIndex].trim().startsWith('Rem :')) {
           const currentLine = txtLines[currentIndex].trim();
 
-          // Find "CE" line to get BR
           if (currentLine.includes('CE ')) {
             const ceParts = currentLine.split(/\s+/);
             const brPart = ceParts.find(p => p.startsWith('BR'));
-            if(brPart) {
-               br = brPart;
-            }
+            if(brPart) br = brPart;
           }
           
-          // Find "Linha :" to get Ordem
           if (currentLine.includes('Linha :')) {
             const linhaParts = currentLine.split('Linha :');
             if(linhaParts.length > 1 && linhaParts[1].trim()) {
                const linhaContent = linhaParts[1].trim().split(/\s+/);
-               // The order number can be the first or second element after "Linha :"
                if(linhaContent.length > 1 && /^\d+$/.test(linhaContent[1])) {
                   ordem = linhaContent[1]; 
                } else if (/^\d+$/.test(linhaContent[0])) {
@@ -108,7 +77,6 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
             }
           }
 
-          // Find "Qtd Cx" and get the value from the next line
           if (currentLine.startsWith('Qtd Cx')) {
              if (txtLines[currentIndex + 1]) {
                 const qtdCxText = txtLines[currentIndex + 1].trim();
@@ -124,11 +92,14 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
         txtData.push({ remessa, data, br, ordem, qtdEtiqueta });
       }
     });
+    return txtData;
+}
 
-    // 2. Parse Excel file
-    const excelData: Pick<DataRow, 'remessa' | 'cidade' | 'cliente'> & { sku: string }[] = [];
+
+function parseExcelFile(excelContent: string): ExcelData[] {
+    const excelData: ExcelData[] = [];
     try {
-        const workbook = xlsx.read(Buffer.from(input.excelContent, 'base64'), { type: 'buffer' });
+        const workbook = xlsx.read(Buffer.from(excelContent, 'base64'), { type: 'buffer' });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
         const jsonSheet = xlsx.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: null });
@@ -138,8 +109,8 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
           const skuH = row[7]; // Column H
           const skuI = row[8]; // Column I
           const skuM = row[12]; // Column M
-          const cidadeColumn = row[10];      // Column K
-          const clienteColumn = row[11];   // Column L
+          const cidadeColumn = row[10]; // Column K
+          const clienteColumn = row[11]; // Column L
     
           if (remessa !== null && (cidadeColumn || clienteColumn)) {
             const sku = skuM || skuI || skuH; 
@@ -153,20 +124,44 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
         });
     } catch(e) {
         console.error("Error parsing excel file", e);
+        throw new Error("Falha ao analisar o arquivo Excel.");
     }
+    return excelData;
+}
+
+function insertAttentionRows(data: DataRow[]): DataRow[] {
+    if (data.length === 0) return [];
     
-    // Create a Set of partnership SKUs for efficient lookup
+    const result: DataRow[] = [];
+    for (let i = 0; i < data.length; i++) {
+        result.push(data[i]);
+        const currentBr = data[i].br;
+        const nextBr = data[i + 1]?.br;
+
+        if (nextBr && nextBr.trim() !== '' && nextBr !== 'ATENÇÃO' && currentBr !== nextBr) {
+             result.push({
+                remessa: '', data: '', br: 'ATENÇÃO', cidade: '',
+                cliente: `PROXIMO ${nextBr}`,
+                ordem: '', qtdEtiqueta: '', nCaixas: '', parceria: '',
+            });
+        }
+    }
+    return result;
+}
+
+
+export async function processFiles(input: ProcessFilesInput): Promise<ProcessFilesOutput> {
+    const txtData = parseTxtFile(input.txtContent);
+    const excelData = parseExcelFile(input.excelContent);
+    
     const parceriaSkuSet = new Set(parceriaBrutaData.map(item => item.sku));
-    
-    // Create a Map from Excel data for efficient lookup
-    const excelDataMap = new Map<string, (Pick<DataRow, 'cidade' | 'cliente'> & { sku: string })[]>();
+    const excelDataMap = new Map<string, ExcelData[]>();
     excelData.forEach(item => {
         const existing = excelDataMap.get(item.remessa) || [];
         existing.push(item);
         excelDataMap.set(item.remessa, existing);
     });
 
-    // 3. Merge data
     const tempMainData: DataRow[] = [];
     const tempParceriaData: DataRow[] = [];
 
@@ -183,7 +178,6 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
     txtData.forEach((txtItem) => {
       const excelItems = excelDataMap.get(txtItem.remessa) || [];
       const parceriaItems = excelItems.filter(item => parceriaSkuSet.has(item.sku) && item.cliente !== 'N/A');
-      const isParceria = parceriaItems.length > 0;
       
       const qtdEtiquetasBase = txtItem.qtdEtiqueta > 0 ? txtItem.qtdEtiqueta : 0;
       const qtdEtiquetasParceria = parceriaItems.length;
@@ -192,10 +186,8 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
       
       let currentCaixaCounter = 1;
 
-      // Generate base labels for the main list
       for (let i = 0; i < qtdEtiquetasBase; i++) {
         const firstExcelItem = excelItems.length > 0 ? excelItems[0] : null;
-
         let cliente = firstExcelItem?.cliente || 'N/A';
         if (clienteMapping[txtItem.br]) {
             cliente = clienteMapping[txtItem.br];
@@ -207,12 +199,11 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
             cliente: cliente,
             qtdEtiqueta: totalEtiquetasRemessa,
             nCaixas: `${String(currentCaixaCounter++).padStart(2, '0')}/${totalEtiquetasRemessaString}`,
-            parceria: isParceria ? 'Sim' : 'Não',
+            parceria: parceriaItems.length > 0 ? 'Sim' : 'Não',
         });
       }
 
-      // Generate partnership labels for the separate partnership list
-      if (isParceria) {
+      if (parceriaItems.length > 0) {
           parceriaItems.forEach((parceriaItem) => {
               tempParceriaData.push({
                   ...txtItem,
