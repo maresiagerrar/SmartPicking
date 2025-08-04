@@ -127,7 +127,7 @@ export default function ParceriaBrutaPage() {
                   </Button>
                   <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                     <DialogTrigger asChild>
-                       <Button>
+                       <Button style={{ backgroundColor: '#D40511' }}>
                           <PlusCircle className="mr-2 h-4 w-4" />
                           Adicionar SKU
                        </Button>
