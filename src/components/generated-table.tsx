@@ -135,11 +135,11 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
     // Filtering
     if (activeFilters.length > 0) {
       processableData = processableData.filter((row) => {
+        // Always show attention rows
+        if (row.br === 'ATENÇÃO') return true;
+
         return activeFilters.every(([key, value]) => {
           const rowValue = row[key as keyof DataRow];
-          if (row.br === 'ATENÇÃO' && key !== 'br' && key !== 'cliente') {
-            return true; // Don't filter attention rows on most columns
-          }
           return String(rowValue).toLowerCase().includes(String(value).toLowerCase());
         });
       });
@@ -148,7 +148,9 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
     // Sorting
     if (sortConfig !== null) {
       processableData.sort((a, b) => {
-        // Keep "ATENÇÃO" rows in their relative positions after the group they follow
+        // Keep "ATENÇÃO" rows sticky to their preceding group
+        // This is a simplified sort, for complex grouping a pre-sort grouping would be better.
+        // For now, we just don't sort attention rows themselves.
         if (a.br === 'ATENÇÃO' || b.br === 'ATENÇÃO') {
             return 0;
         }

@@ -36,11 +36,11 @@ export type ProcessFilesOutput = z.infer<typeof ProcessFilesOutputSchema>;
 
 export async function processFiles(input: ProcessFilesInput): Promise<ProcessFilesOutput> {
     // 1. Parse TXT file
-    const txtData: Omit<DataRow, 'cidade' | 'cliente' | 'nCaixas' | 'qtdEtiqueta' | 'parceria'>[] & { qtdEtiqueta: number } = [];
+    const txtData: Omit<DataRow, 'cidade' | 'cliente' | 'nCaixas' | 'parceria'>[] & { qtdEtiqueta: number } = [];
     const txtLines = input.txtContent.split(/\r?\n/);
     
-    txtLines.forEach(line => {
-      if (line.startsWith('Rem :')) {
+    txtLines.forEach((line, index) => {
+      if (line.trim().startsWith('Rem :')) {
         const parts = line.split(/\s+/);
         const remessa = parts[2];
         const data = parts[3];
@@ -49,47 +49,45 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
         let qtdEtiqueta = 0;
         let br = 'N/A';
 
-        const remessaLineIndex = txtLines.findIndex(l => l.trim() === line.trim());
-
-        if (remessaLineIndex !== -1) {
+        // Search for details within the block of lines for this "Remessa"
+        let currentIndex = index + 1;
+        while(currentIndex < txtLines.length && !txtLines[currentIndex].trim().startsWith('Rem :')) {
+          const currentLine = txtLines[currentIndex].trim();
 
           // Find "CE" line to get BR
-          if (txtLines[remessaLineIndex + 1] && txtLines[remessaLineIndex + 1].includes('CE ')) {
-            const ceParts = txtLines[remessaLineIndex + 1].split(/\s+/);
+          if (currentLine.includes('CE ')) {
+            const ceParts = currentLine.split(/\s+/);
             const brPart = ceParts.find(p => p.startsWith('BR'));
             if(brPart) {
                br = brPart;
             }
           }
           
-          // Find "Linha :" two lines below
-          if (txtLines[remessaLineIndex + 2] && txtLines[remessaLineIndex + 2].includes('Linha :')) {
-            const linhaParts = txtLines[remessaLineIndex + 2].split('Linha :');
+          // Find "Linha :" to get Ordem
+          if (currentLine.includes('Linha :')) {
+            const linhaParts = currentLine.split('Linha :');
             if(linhaParts.length > 1 && linhaParts[1].trim()) {
                const linhaContent = linhaParts[1].trim().split(/\s+/);
-               if(linhaContent.length > 1) {
+               // The order number can be the first or second element after "Linha :"
+               if(linhaContent.length > 1 && /^\d+$/.test(linhaContent[1])) {
                   ordem = linhaContent[1]; 
-               } else {
+               } else if (/^\d+$/.test(linhaContent[0])) {
                   ordem = linhaContent[0];
                }
             }
           }
 
           // Find "Qtd Cx" and get the value from the next line
-          let currentLineIndex = remessaLineIndex + 1;
-          while(currentLineIndex < txtLines.length && !txtLines[currentLineIndex].startsWith('Rem :')) {
-            if (txtLines[currentLineIndex].trim().startsWith('Qtd Cx')) {
-                 if (txtLines[currentLineIndex + 1]) {
-                    const qtdCxText = txtLines[currentLineIndex + 1].trim();
-                    const qtdCxMatch = qtdCxText.match(/^(\d+)/);
-                    if(qtdCxMatch) {
-                       qtdEtiqueta = parseInt(qtdCxMatch[1], 10) || 0;
-                    }
-                 }
-                 break; 
-            }
-            currentLineIndex++;
+          if (currentLine.startsWith('Qtd Cx')) {
+             if (txtLines[currentIndex + 1]) {
+                const qtdCxText = txtLines[currentIndex + 1].trim();
+                const qtdCxMatch = qtdCxText.match(/^(\d+)/);
+                if(qtdCxMatch) {
+                   qtdEtiqueta = parseInt(qtdCxMatch[1], 10) || 0;
+                }
+             }
           }
+          currentIndex++;
         }
         
         txtData.push({ remessa, data, br, ordem, qtdEtiqueta });
@@ -102,7 +100,6 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
         const workbook = xlsx.read(Buffer.from(input.excelContent, 'base64'), { type: 'buffer' });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
-        // Ensure raw option is false to get formatted text, and defval to handle empty cells
         const jsonSheet = xlsx.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: null });
 
         jsonSheet.forEach((row: any) => {
@@ -113,9 +110,7 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
           const cidadeColumn = row[10];      // Column K
           const clienteColumn = row[11];   // Column L
     
-          // Ensure remessa is always treated as a string and trimmed.
           if (remessa !== null && (cidadeColumn || clienteColumn)) {
-            // Prioritize SKU from column M, then I, fallback to column H
             const sku = skuM || skuI || skuH; 
             excelData.push({
               remessa: String(remessa).trim(),
@@ -127,11 +122,18 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
         });
     } catch(e) {
         console.error("Error parsing excel file", e);
-        // If excel parsing fails, continue with just txt data.
     }
     
     // Create a Set of partnership SKUs for efficient lookup
     const parceriaSkuSet = new Set(parceriaBrutaData.map(item => item.sku));
+    
+    // Create a Map from Excel data for efficient lookup
+    const excelDataMap = new Map<string, (Pick<DataRow, 'cidade' | 'cliente'> & { sku: string })[]>();
+    excelData.forEach(item => {
+        const existing = excelDataMap.get(item.remessa) || [];
+        existing.push(item);
+        excelDataMap.set(item.remessa, existing);
+    });
 
     // 3. Merge data
     const mergedData: DataRow[] = [];
@@ -146,22 +148,19 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
     };
 
     txtData.forEach((txtItem, index) => {
-      // Find all matching entries in the Excel data for the current remessa
-      const excelItems = excelData.filter(excel => excel.remessa === txtItem.remessa);
+      const excelItems = excelDataMap.get(txtItem.remessa) || [];
       
       const qtdEtiquetas = txtItem.qtdEtiqueta > 0 ? txtItem.qtdEtiqueta : 1;
       const totalEtiquetasString = String(qtdEtiquetas).padStart(2, '0');
       
-      // Check if ANY of the SKUs for this remessa are in the partnership set
       const isParceria = excelItems.some(item => parceriaSkuSet.has(item.sku));
       const parceria = isParceria ? 'Sim' : 'Não';
 
       for (let i = 0; i < qtdEtiquetas; i++) {
-        // Use the first excel item for general info, as it's often the same for a given remessa.
         const firstExcelItem = excelItems.length > 0 ? excelItems[0] : null;
 
+        // Start with client from excel, then override with mapping if it exists
         let cliente = firstExcelItem?.cliente || 'N/A';
-        // Override cliente based on BR mapping
         if (clienteMapping[txtItem.br]) {
             cliente = clienteMapping[txtItem.br];
         }
