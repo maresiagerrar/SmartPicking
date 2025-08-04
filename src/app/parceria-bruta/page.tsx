@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
-import { Trash2, PlusCircle } from 'lucide-react';
+import { Trash2, PlusCircle, FileDown } from 'lucide-react';
+import * as xlsx from 'xlsx';
 import {
   Dialog,
   DialogContent,
@@ -84,6 +85,26 @@ export default function ParceriaBrutaPage() {
     );
   }, [filter, data]);
 
+  const handleExport = () => {
+    const header = ["SKU", "MATERIAL"];
+    const body = filteredData.map(row => ({
+      SKU: row.sku,
+      MATERIAL: row.material,
+    }));
+
+    const worksheet = xlsx.utils.json_to_sheet(body, { header: header });
+    const workbook = xlsx.utils.book_new();
+    xlsx.utils.book_append_sheet(workbook, worksheet, "Parceria Bruta");
+
+    // Auto-size columns
+    const cols = Object.keys(body[0] || header).map(key => ({
+        wch: body.reduce((w, r) => Math.max(w, String(r[key as keyof typeof r]).length), key.length) + 2
+    }));
+    worksheet["!cols"] = cols;
+    
+    xlsx.writeFile(workbook, "parceria_bruta.xlsx");
+  };
+
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
@@ -100,6 +121,10 @@ export default function ParceriaBrutaPage() {
                     value={filter}
                     onChange={(e) => setFilter(e.target.value)}
                   />
+                  <Button onClick={handleExport} variant="outline">
+                    <FileDown className="mr-2 h-4 w-4" />
+                    Exportar
+                  </Button>
                   <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                     <DialogTrigger asChild>
                        <Button>
