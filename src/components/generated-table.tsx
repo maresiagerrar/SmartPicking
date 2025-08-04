@@ -132,10 +132,12 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
     xlsx.utils.book_append_sheet(workbook, mainWorksheet, "Dados Principais");
     
     // Parceria Bruta Sheet
-    const parceriaBody = createSheetBody(parceriaData);
-    const parceriaWorksheet = xlsx.utils.json_to_sheet(parceriaBody, { header });
-    autoSizeColumns(parceriaWorksheet, parceriaBody);
-    xlsx.utils.book_append_sheet(workbook, parceriaWorksheet, "Parceria Bruta");
+    if (parceriaData.length > 0) {
+      const parceriaBody = createSheetBody(parceriaData);
+      const parceriaWorksheet = xlsx.utils.json_to_sheet(parceriaBody, { header });
+      autoSizeColumns(parceriaWorksheet, parceriaBody);
+      xlsx.utils.book_append_sheet(workbook, parceriaWorksheet, "Parceria Bruta");
+    }
 
     xlsx.writeFile(workbook, "relatorio_smart_picking.xlsx");
   };
@@ -269,7 +271,7 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
             </Button>
             <Button onClick={clearFilters} variant="outline" size="sm" disabled={Object.values(filters).every(v => !v) && !sortConfig}>
                 <X className="mr-2 h-4 w-4" />
-                Limpar Filtros & Ordem
+                Limpar Filtros
             </Button>
             <Button onClick={onReset} style={{ backgroundColor: '#D40511', color: 'white' }}>
               <RotateCcw className="mr-2 h-4 w-4" />
@@ -357,5 +359,4 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
     </Card>
   );
 }
-
     
