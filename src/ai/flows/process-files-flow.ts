@@ -217,7 +217,7 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
               tempParceriaData.push({
                   ...txtItem,
                   cidade: parceriaItem.cidade,
-                  cliente: `PARCERIA BRUTA - ${parceriaItem.cliente}`,
+                  cliente: parceriaItem.cliente,
                   qtdEtiqueta: totalEtiquetasRemessa,
                   nCaixas: `${String(currentCaixaCounter++).padStart(2, '0')}/${totalEtiquetasRemessaString}`,
                   parceria: "Sim",
