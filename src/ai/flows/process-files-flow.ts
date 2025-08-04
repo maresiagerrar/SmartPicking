@@ -37,6 +37,34 @@ const ProcessFilesOutputSchema = z.object({
 });
 export type ProcessFilesOutput = z.infer<typeof ProcessFilesOutputSchema>;
 
+function insertAttentionRows(data: DataRow[]): DataRow[] {
+    if (data.length === 0) return [];
+    
+    const result: DataRow[] = [];
+    for (let i = 0; i < data.length; i++) {
+        result.push(data[i]);
+        const currentBr = data[i].br;
+        const nextBr = data[i + 1]?.br;
+
+        // Check if the next item exists, has a non-empty br, is not an attention row, and has a different br code
+        if (nextBr && nextBr.trim() !== '' && nextBr !== 'ATENÇÃO' && currentBr !== nextBr) {
+             result.push({
+                remessa: '',
+                data: '',
+                br: 'ATENÇÃO',
+                cidade: '',
+                cliente: `PROXIMO ${nextBr}`,
+                ordem: '',
+                qtdEtiqueta: '',
+                nCaixas: '',
+                parceria: '',
+            });
+        }
+    }
+    return result;
+}
+
+
 export async function processFiles(input: ProcessFilesInput): Promise<ProcessFilesOutput> {
     // 1. Parse TXT file
     const txtData: Omit<DataRow, 'cidade' | 'cliente' | 'nCaixas' | 'parceria'>[] & { qtdEtiqueta: number }[] = [];
@@ -139,8 +167,8 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
     });
 
     // 3. Merge data
-    const mainData: DataRow[] = [];
-    const parceriaData: DataRow[] = [];
+    const tempMainData: DataRow[] = [];
+    const tempParceriaData: DataRow[] = [];
 
     const clienteMapping: Record<string, string> = {
       "BR495477": "SJBV - LEME",
@@ -152,7 +180,7 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
       "BR442706": "ITAPEVA",
     };
 
-    txtData.forEach((txtItem, index) => {
+    txtData.forEach((txtItem) => {
       const excelItems = excelDataMap.get(txtItem.remessa) || [];
       const parceriaItems = excelItems.filter(item => parceriaSkuSet.has(item.sku) && item.cliente !== 'N/A');
       const isParceria = parceriaItems.length > 0;
@@ -173,7 +201,7 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
             cliente = clienteMapping[txtItem.br];
         }
         
-        mainData.push({
+        tempMainData.push({
             ...txtItem,
             cidade: firstExcelItem?.cidade || 'N/A',
             cliente: cliente,
@@ -186,7 +214,7 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
       // Generate partnership labels for the separate partnership list
       if (isParceria) {
           parceriaItems.forEach((parceriaItem) => {
-              parceriaData.push({
+              tempParceriaData.push({
                   ...txtItem,
                   cidade: parceriaItem.cidade,
                   cliente: `PARCERIA BRUTA - ${parceriaItem.cliente}`,
@@ -196,25 +224,10 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
               });
           });
       }
-
-
-      // Check if the next item has a different BR code and it's not the last item
-      const nextTxtItem = txtData[index + 1];
-      if (nextTxtItem && nextTxtItem.br !== txtItem.br) {
-        mainData.push({
-            remessa: '',
-            data: '',
-            br: 'ATENÇÃO',
-            cidade: '',
-            cliente: `PROXIMO ${nextTxtItem.br}`,
-            ordem: '',
-            qtdEtiqueta: '',
-            nCaixas: '',
-            parceria: '',
-        });
-      }
     });
+
+    const mainData = insertAttentionRows(tempMainData);
+    const parceriaData = insertAttentionRows(tempParceriaData);
 
     return { mainData, parceriaData };
 }
-
