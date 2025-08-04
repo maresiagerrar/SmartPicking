@@ -183,6 +183,10 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
 
     return processableData;
   }, [currentData, filters, sortConfig]);
+
+  const labelCount = useMemo(() => {
+    return sortedAndFilteredData.filter(row => row.br !== 'ATENÇÃO').length;
+  }, [sortedAndFilteredData]);
   
   const HeaderCell = ({ column, label }: { column: keyof DataRow, label: string }) => {
     const [inputValue, setInputValue] = useState(filters[column] || '');
@@ -240,6 +244,9 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
       <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 non-printable">
         <div className='flex items-center gap-4'>
            <CardTitle className="font-headline text-2xl">Dados da Etiqueta</CardTitle>
+            <span className="text-sm font-medium text-muted-foreground">
+                ({labelCount} {labelCount === 1 ? 'etiqueta' : 'etiquetas'})
+            </span>
            <div className="flex items-center space-x-2">
             <Switch id="agrupado-switch" checked={showParceriaData} onCheckedChange={setShowParceriaData} />
             <Label htmlFor="agrupado-switch" variant="toggle">Parceria Bruta</Label>
