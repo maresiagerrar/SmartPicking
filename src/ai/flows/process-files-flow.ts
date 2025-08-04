@@ -140,23 +140,29 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
     };
 
     txtData.forEach((txtItem, index) => {
-      const excelItem = excelData.find(excel => excel.remessa === txtItem.remessa);
+      // Find all matching entries in the Excel data for the current remessa
+      const excelItems = excelData.filter(excel => excel.remessa === txtItem.remessa);
       
       const qtdEtiquetas = txtItem.qtdEtiqueta > 0 ? txtItem.qtdEtiqueta : 1;
       const totalEtiquetasString = String(qtdEtiquetas).padStart(2, '0');
       
       for (let i = 0; i < qtdEtiquetas; i++) {
-        let cliente = excelItem?.cliente || 'N/A';
+        // Use the first excel item for general info, as it's often the same for a given remessa.
+        const firstExcelItem = excelItems.length > 0 ? excelItems[0] : null;
+
+        let cliente = firstExcelItem?.cliente || 'N/A';
         // Override cliente based on BR mapping
         if (clienteMapping[txtItem.br]) {
             cliente = clienteMapping[txtItem.br];
         }
-
-        const parceria = excelItem && parceriaSkuSet.has(excelItem.sku) ? 'Sim' : 'Não';
-
+        
+        // Check if ANY of the SKUs for this remessa are in the partnership set
+        const isParceria = excelItems.some(item => parceriaSkuSet.has(item.sku));
+        const parceria = isParceria ? 'Sim' : 'Não';
+        
         const baseItem = {
             ...txtItem,
-            cidade: excelItem?.cidade || 'N/A',
+            cidade: firstExcelItem?.cidade || 'N/A',
             cliente: cliente,
             qtdEtiqueta: qtdEtiquetas,
             parceria: parceria,
