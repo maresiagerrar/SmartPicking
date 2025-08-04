@@ -98,18 +98,11 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
 
   const handleExport = () => {
     const header = [
-      "REMESSA",
-      "DATA",
-      "BR",
-      "CIDADE",
-      "CLIENTE",
-      "ORDEM",
-      "QTD ETIQUETA",
-      "Nº CAIXAS",
-      "PARCERIA"
+      "REMESSA", "DATA", "BR", "CIDADE", "CLIENTE",
+      "ORDEM", "QTD ETIQUETA", "Nº CAIXAS", "PARCERIA"
     ];
-
-    const body = sortedAndFilteredData.map(row => ({
+    
+    const createSheetBody = (sheetData: DataRow[]) => sheetData.map(row => ({
       "REMESSA": row.remessa,
       "DATA": row.data,
       "BR": row.br,
@@ -120,16 +113,27 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
       "Nº CAIXAS": row.nCaixas,
       "PARCERIA": row.parceria
     }));
-    
-    const worksheet = xlsx.utils.json_to_sheet(body, { header: header });
-    const workbook = xlsx.utils.book_new();
-    xlsx.utils.book_append_sheet(workbook, worksheet, "Dados");
 
-    // Auto-size columns
-    const cols = Object.keys(body[0] || header).map(key => ({
-        wch: body.reduce((w, r) => Math.max(w, String(r[key as keyof typeof r]).length), key.length) + 2
-    }));
-    worksheet["!cols"] = cols;
+    const autoSizeColumns = (worksheet: xlsx.WorkSheet, body: any[]) => {
+      const cols = Object.keys(body[0] || header).map(key => ({
+          wch: body.reduce((w, r) => Math.max(w, String(r[key as keyof typeof r]).length), key.length) + 2
+      }));
+      worksheet["!cols"] = cols;
+    };
+    
+    const workbook = xlsx.utils.book_new();
+
+    // Main Data Sheet
+    const mainBody = createSheetBody(data);
+    const mainWorksheet = xlsx.utils.json_to_sheet(mainBody, { header });
+    autoSizeColumns(mainWorksheet, mainBody);
+    xlsx.utils.book_append_sheet(workbook, mainWorksheet, "Dados Principais");
+    
+    // Parceria Bruta Sheet
+    const parceriaBody = createSheetBody(parceriaData);
+    const parceriaWorksheet = xlsx.utils.json_to_sheet(parceriaBody, { header });
+    autoSizeColumns(parceriaWorksheet, parceriaBody);
+    xlsx.utils.book_append_sheet(workbook, parceriaWorksheet, "Parceria Bruta");
 
     xlsx.writeFile(workbook, "relatorio_smart_picking.xlsx");
   };
