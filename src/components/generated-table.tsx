@@ -111,14 +111,16 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
       "ORDEM": row.ordem,
       "QTD ETIQUETA": row.qtdEtiqueta,
       "Nº CAIXAS": row.nCaixas,
-      "PARCERIA": row.parceria
+      "PARCERIA": row.parceria === 'Sim' ? 'Sim' : ''
     }));
 
     const autoSizeColumns = (worksheet: xlsx.WorkSheet, body: any[]) => {
-      const cols = Object.keys(body[0] || header).map(key => ({
-          wch: body.reduce((w, r) => Math.max(w, String(r[key as keyof typeof r]).length), key.length) + 2
-      }));
-      worksheet["!cols"] = cols;
+      if (body.length > 0) {
+        const cols = Object.keys(body[0]).map(key => ({
+            wch: body.reduce((w, r) => Math.max(w, String(r[key as keyof typeof r]).length), key.length) + 2
+        }));
+        worksheet["!cols"] = cols;
+      }
     };
     
     const workbook = xlsx.utils.book_new();
