@@ -185,7 +185,7 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
   }, [currentData, filters, sortConfig]);
 
   const labelCount = useMemo(() => {
-    return sortedAndFilteredData.filter(row => row.br !== 'ATENÇÃO').length;
+    return sortedAndFilteredData.length;
   }, [sortedAndFilteredData]);
   
   const HeaderCell = ({ column, label }: { column: keyof DataRow, label: string }) => {
