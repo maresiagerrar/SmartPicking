@@ -157,12 +157,15 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
       const parceriaItems = excelItems.filter(item => parceriaSkuSet.has(item.sku) && item.cliente !== 'N/A');
       const isParceria = parceriaItems.length > 0;
       
-      const qtdEtiquetasBase = txtItem.qtdEtiqueta > 0 ? txtItem.qtdEtiqueta : 1;
-      const totalEtiquetasBaseString = String(qtdEtiquetasBase).padStart(2, '0');
+      const qtdEtiquetasBase = txtItem.qtdEtiqueta > 0 ? txtItem.qtdEtiqueta : 0;
+      const qtdEtiquetasParceria = parceriaItems.length;
+      const totalEtiquetasRemessa = qtdEtiquetasBase + qtdEtiquetasParceria;
+      const totalEtiquetasRemessaString = String(totalEtiquetasRemessa).padStart(2, '0');
       
+      let currentCaixaCounter = 1;
+
       // Generate base labels for the main list
       for (let i = 0; i < qtdEtiquetasBase; i++) {
-        const caixaCounter = i + 1;
         const firstExcelItem = excelItems.length > 0 ? excelItems[0] : null;
 
         let cliente = firstExcelItem?.cliente || 'N/A';
@@ -174,22 +177,21 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
             ...txtItem,
             cidade: firstExcelItem?.cidade || 'N/A',
             cliente: cliente,
-            qtdEtiqueta: qtdEtiquetasBase,
-            nCaixas: `${String(caixaCounter).padStart(2, '0')}/${totalEtiquetasBaseString}`,
+            qtdEtiqueta: totalEtiquetasRemessa,
+            nCaixas: `${String(currentCaixaCounter++).padStart(2, '0')}/${totalEtiquetasRemessaString}`,
             parceria: isParceria ? 'Sim' : 'Não',
         });
       }
 
       // Generate partnership labels for the separate partnership list
       if (isParceria) {
-          const totalEtiquetasParceriaString = String(parceriaItems.length).padStart(2, '0');
-          parceriaItems.forEach((parceriaItem, parceriaIndex) => {
+          parceriaItems.forEach((parceriaItem) => {
               parceriaData.push({
                   ...txtItem,
                   cidade: parceriaItem.cidade,
                   cliente: `PARCERIA BRUTA - ${parceriaItem.cliente}`,
-                  qtdEtiqueta: parceriaItems.length,
-                  nCaixas: `${String(parceriaIndex + 1).padStart(2, '0')}/${totalEtiquetasParceriaString}`,
+                  qtdEtiqueta: totalEtiquetasRemessa,
+                  nCaixas: `${String(currentCaixaCounter++).padStart(2, '0')}/${totalEtiquetasRemessaString}`,
                   parceria: "Sim",
               });
           });
@@ -215,3 +217,4 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
 
     return { mainData, parceriaData };
 }
+
