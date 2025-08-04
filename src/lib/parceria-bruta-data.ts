@@ -86,7 +86,6 @@ export const parceriaBrutaData: ParceriaBrutaDataRow[] = [
   { sku: '50059021', material: 'AMAC DOWNY LIRIOS 500MI, VEO' },
   { sku: '50995232', material: 'AMAC DOWNY BRISA DE VERAO 500ML. CAIXA COM 12 VENDA 1' },
   { sku: '50059090', material: 'AMAC DOWNY BRISA 500ML VEO' },
-  { sku: '50995526', material: 'PROMO-AMAC DOWNY BRISA DE VERAO 500ML CAIXA COM 12 VEND' },
   { sku: '50053557', material: 'AMAC DOWNY PRIMAVERA 500ML CAIXA COM 12 VENDA 1' },
   { sku: '50059100', material: 'DOWNY PRIMAVERA 500ML VEO' },
   { sku: '50057234', material: 'FRALDA PAMP SS PTINIO P 20X10 UM' },
@@ -119,7 +118,4 @@ export const parceriaBrutaData: ParceriaBrutaDataRow[] = [
   { sku: '50067083', material: 'MAISMU BEBIDA MORANGO C/12' },
   { sku: '50066863', material: 'Cookies Original Bauducco 24x60g' },
   { sku: '50066828', material: 'Pringles Original 12x35g' },
-  { sku: '50066879', material: 'ENGOV UP MOR E KIWI LATA 260MI.' },
-  { sku: '50066171', material: 'Mais Mu Bebida Pronta Choco 250ml c/12' },
-  { sku: '50066878', material: 'ENGOV AFTER TANGERINA 250ML.' },
 ];
