@@ -102,7 +102,8 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
         const workbook = xlsx.read(Buffer.from(input.excelContent, 'base64'), { type: 'buffer' });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
-        const jsonSheet = xlsx.utils.sheet_to_json(worksheet, { header: 1, blankrows: false });
+        // Ensure raw option is false to get formatted text, and defval to handle empty cells
+        const jsonSheet = xlsx.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: null });
 
         jsonSheet.forEach((row: any) => {
           const remessa = row[0]; // Column A
@@ -110,10 +111,11 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
           const cidadeColumn = row[10];      // Column K
           const clienteColumn = row[11];   // Column L
     
-          if (remessa && (cidadeColumn || clienteColumn)) {
+          // Ensure remessa is always treated as a string and trimmed.
+          if (remessa !== null && (cidadeColumn || clienteColumn)) {
             excelData.push({
               remessa: String(remessa).trim(),
-              sku: String(sku).trim(),
+              sku: sku ? String(sku).trim() : 'N/A',
               cidade: cidadeColumn ? String(cidadeColumn) : 'N/A',
               cliente: clienteColumn ? String(clienteColumn) : 'N/A',
             });
@@ -146,6 +148,10 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
       const qtdEtiquetas = txtItem.qtdEtiqueta > 0 ? txtItem.qtdEtiqueta : 1;
       const totalEtiquetasString = String(qtdEtiquetas).padStart(2, '0');
       
+      // Check if ANY of the SKUs for this remessa are in the partnership set
+      const isParceria = excelItems.some(item => parceriaSkuSet.has(item.sku));
+      const parceria = isParceria ? 'Sim' : 'Não';
+
       for (let i = 0; i < qtdEtiquetas; i++) {
         // Use the first excel item for general info, as it's often the same for a given remessa.
         const firstExcelItem = excelItems.length > 0 ? excelItems[0] : null;
@@ -155,10 +161,6 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
         if (clienteMapping[txtItem.br]) {
             cliente = clienteMapping[txtItem.br];
         }
-        
-        // Check if ANY of the SKUs for this remessa are in the partnership set
-        const isParceria = excelItems.some(item => parceriaSkuSet.has(item.sku));
-        const parceria = isParceria ? 'Sim' : 'Não';
         
         const baseItem = {
             ...txtItem,
