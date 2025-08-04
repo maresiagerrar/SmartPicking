@@ -31,7 +31,10 @@ const DataRowSchema = z.object({
   parceria: z.string(),
 });
 
-const ProcessFilesOutputSchema = z.array(DataRowSchema);
+const ProcessFilesOutputSchema = z.object({
+    mainData: z.array(DataRowSchema),
+    parceriaData: z.array(DataRowSchema)
+});
 export type ProcessFilesOutput = z.infer<typeof ProcessFilesOutputSchema>;
 
 export async function processFiles(input: ProcessFilesInput): Promise<ProcessFilesOutput> {
@@ -137,6 +140,7 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
 
     // 3. Merge data
     const mergedData: DataRow[] = [];
+    const parceriaData: DataRow[] = [];
     const clienteMapping: Record<string, string> = {
       "BR495477": "SJBV - LEME",
       "BR495480": "SJBV - PIRASSUNUNGA",
@@ -155,6 +159,19 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
       
       const isParceria = excelItems.some(item => parceriaSkuSet.has(item.sku));
       const parceria = isParceria ? 'Sim' : 'Não';
+      
+      const parceriaItems = excelItems.filter(item => parceriaSkuSet.has(item.sku));
+      parceriaItems.forEach((parceriaItem, pIndex) => {
+          parceriaData.push({
+              ...txtItem,
+              cidade: parceriaItem.cidade,
+              cliente: `PARCERIA BRUTA - ${parceriaItem.cliente}`,
+              qtdEtiqueta: 1,
+              nCaixas: `${String(pIndex + 1).padStart(2, '0')}/${String(parceriaItems.length).padStart(2, '0')}`,
+              parceria: "Sim",
+          });
+      });
+
 
       for (let i = 0; i < qtdEtiquetas; i++) {
         const firstExcelItem = excelItems.length > 0 ? excelItems[0] : null;
@@ -198,5 +215,5 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
       }
     });
 
-    return mergedData;
+    return { mainData: mergedData, parceriaData: parceriaData };
 }

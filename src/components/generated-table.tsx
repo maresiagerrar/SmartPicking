@@ -1,3 +1,4 @@
+
 "use client";
 import { useState, useMemo, KeyboardEvent, useEffect } from 'react';
 import type { DataRow } from '@/lib/types';
@@ -24,6 +25,7 @@ import { Label } from './ui/label';
 
 interface GeneratedTableProps {
   data: DataRow[];
+  parceriaData: DataRow[];
   onReset: () => void;
 }
 
@@ -34,11 +36,14 @@ type SortConfig = {
     direction: SortDirection;
 } | null;
 
-export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
+export default function GeneratedTable({ data, parceriaData, onReset }: GeneratedTableProps) {
   const [filters, setFilters] = useState<FilterState>({});
   const [sortConfig, setSortConfig] = useState<SortConfig>(null);
   const [previewData, setPreviewData] = useState<DataRow | null>(null);
   const [printedRows, setPrintedRows] = useState<Set<string>>(new Set());
+  const [showParceria, setShowParceria] = useState(false);
+
+  const activeData = useMemo(() => showParceria ? parceriaData : data, [showParceria, data, parceriaData]);
 
   const getRowId = (row: DataRow) => `${row.remessa}-${row.ordem}-${row.nCaixas}`;
 
@@ -132,7 +137,7 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
 
   const sortedAndFilteredData = useMemo(() => {
     const activeFilters = Object.entries(filters).filter(([, value]) => value);
-    let processableData = [...data];
+    let processableData = [...activeData];
 
     // Filtering
     if (activeFilters.length > 0) {
@@ -178,7 +183,7 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
     }
 
     return processableData;
-  }, [data, filters, sortConfig]);
+  }, [activeData, filters, sortConfig]);
   
   const HeaderCell = ({ column, label }: { column: keyof DataRow, label: string }) => {
     const [inputValue, setInputValue] = useState(filters[column] || '');
@@ -237,8 +242,8 @@ export default function GeneratedTable({ data, onReset }: GeneratedTableProps) {
         <div className="flex items-center gap-4">
           <CardTitle className="font-headline text-2xl">Dados da Etiqueta</CardTitle>
           <div className="flex items-center space-x-2">
-            <Switch id="special-toggle" />
-            <Label htmlFor="special-toggle" variant="toggle">Agrupado</Label>
+            <Switch id="special-toggle" checked={showParceria} onCheckedChange={setShowParceria} />
+            <Label htmlFor="special-toggle" variant="toggle">Parceria</Label>
           </div>
         </div>
         <div className="flex items-center gap-2">
