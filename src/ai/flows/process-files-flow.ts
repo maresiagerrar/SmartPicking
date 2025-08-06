@@ -235,10 +235,15 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
 
       if (parceriaItems.length > 0) {
           parceriaItems.forEach((parceriaItem) => {
+              let cliente = parceriaItem.cliente;
+              if (clienteMapping[txtItem.br]) {
+                  cliente = clienteMapping[txtItem.br];
+              }
+
               tempParceriaData.push({
                   ...txtItem,
                   cidade: parceriaItem.cidade,
-                  cliente: parceriaItem.cliente,
+                  cliente: cliente,
                   qtdEtiqueta: totalEtiquetasRemessa,
                   nCaixas: `${String(currentCaixaCounter++).padStart(2, '0')}/${totalEtiquetasRemessaString}`,
                   parceria: "Sim",
