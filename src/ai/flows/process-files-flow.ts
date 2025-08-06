@@ -43,55 +43,64 @@ type ExcelData = Pick<DataRow, 'remessa' | 'cidade' | 'cliente'> & { sku: string
 
 function parseTxtFile(txtContent: string): TxtData[] {
     const txtData: TxtData[] = [];
-    const txtLines = txtContent.split(/\r?\n/);
-    
-    txtLines.forEach((line, index) => {
-      if (line.trim().startsWith('Rem :')) {
-        const parts = line.split(/\s+/);
-        const remessa = parts[2];
-        const data = parts[3];
+    const blocks = txtContent.split('Doc. Transp :').slice(1);
+
+    blocks.forEach(block => {
+        const lines = block.split(/\r?\n/);
         
+        let remessa = 'N/A';
+        let data = 'N/A';
+        let br = 'N/A';
         let ordem = 'N/A';
         let qtdEtiqueta = 0;
-        let br = 'N/A';
 
-        let currentIndex = index + 1;
-        while(currentIndex < txtLines.length && !txtLines[currentIndex].trim().startsWith('Rem :')) {
-          const currentLine = txtLines[currentIndex].trim();
-
-          if (currentLine.includes('CE ')) {
-            const ceParts = currentLine.split(/\s+/);
-            const brPart = ceParts.find(p => p.startsWith('BR'));
-            if(brPart) br = brPart;
-          }
-          
-          if (currentLine.includes('Linha :')) {
-            const linhaParts = currentLine.split('Linha :');
-            if(linhaParts.length > 1 && linhaParts[1].trim()) {
-               const linhaContent = linhaParts[1].trim().split(/\s+/);
-               if(linhaContent.length > 1 && /^\d+$/.test(linhaContent[1])) {
-                  ordem = linhaContent[1]; 
-               } else if (/^\d+$/.test(linhaContent[0])) {
-                  ordem = linhaContent[0];
-               }
+        // Find Remessa and Data
+        const remLine = lines.find(l => l.includes('Rem :'));
+        if (remLine) {
+            const parts = remLine.split(/\s+/).filter(p => p.trim() !== '');
+            if (parts.length >= 3) {
+                 remessa = parts[parts.findIndex(p => p === ':') + 1] || 'N/A';
+                 data = parts[parts.findIndex(p => p === ':') + 2] || 'N/A';
             }
-          }
-
-          if (currentLine.startsWith('Qtd Cx')) {
-             if (txtLines[currentIndex + 1]) {
-                const qtdCxText = txtLines[currentIndex + 1].trim();
-                const qtdCxMatch = qtdCxText.match(/^(\d+)/);
-                if(qtdCxMatch) {
-                   qtdEtiqueta = parseInt(qtdCxMatch[1], 10) || 0;
-                }
-             }
-          }
-          currentIndex++;
         }
         
-        txtData.push({ remessa, data, br, ordem, qtdEtiqueta });
-      }
+        // Find BR
+        const ceLine = lines.find(l => l.includes('CE '));
+        if (ceLine) {
+            const ceParts = ceLine.split(/\s+/);
+            const brPart = ceParts.find(p => p.startsWith('BR'));
+            if (brPart) br = brPart;
+        }
+
+        // Find Ordem
+        const linhaLine = lines.find(l => l.includes('Linha :'));
+        if (linhaLine) {
+            const linhaParts = linhaLine.split('Linha :');
+            if (linhaParts.length > 1 && linhaParts[1].trim()) {
+                const linhaContent = linhaParts[1].trim().split(/\s+/);
+                if (linhaContent.length > 1 && /^\d+$/.test(linhaContent[1])) {
+                    ordem = linhaContent[1];
+                } else if (/^\d+$/.test(linhaContent[0])) {
+                    ordem = linhaContent[0];
+                }
+            }
+        }
+        
+        // Find QtdEtiqueta
+        const qtdCxIndex = lines.findIndex(l => l.trim().startsWith('Qtd Cx'));
+        if (qtdCxIndex !== -1 && lines[qtdCxIndex + 1]) {
+            const qtdCxText = lines[qtdCxIndex + 1].trim();
+            const qtdCxMatch = qtdCxText.match(/^(\d+)/);
+            if (qtdCxMatch) {
+                qtdEtiqueta = parseInt(qtdCxMatch[1], 10) || 0;
+            }
+        }
+
+        if (remessa !== 'N/A' || qtdEtiqueta > 0) {
+           txtData.push({ remessa, data, br, ordem, qtdEtiqueta });
+        }
     });
+
     return txtData;
 }
 
