@@ -43,28 +43,38 @@ type ExcelData = Pick<DataRow, 'remessa' | 'cidade' | 'cliente'> & { sku: string
 
 function parseTxtFile(txtContent: string): TxtData[] {
     const txtData: TxtData[] = [];
-    const blocks = txtContent.split('Doc. Transp :').slice(1);
+    
+    // Pre-process: remove page breaks and useless lines
+    const cleanedContent = txtContent.replace(/\f/g, '').replace(/Doc\. Transp : \s*[\r\n]/g, '');
+    const blocks = cleanedContent.split('Doc. Transp :').slice(1);
+
+    let lastValidData = { remessa: 'N/A', data: 'N/A', br: 'N/A', ordem: 'N/A' };
 
     blocks.forEach(block => {
-        const lines = block.split(/\r?\n/);
+        const lines = block.split(/\r?\n/).filter(l => l.trim() !== '');
         
         let remessa = 'N/A';
         let data = 'N/A';
         let br = 'N/A';
         let ordem = 'N/A';
         let qtdEtiqueta = 0;
-
-        // Find Remessa and Data
+        
         const remLine = lines.find(l => l.includes('Rem :'));
         if (remLine) {
             const parts = remLine.split(/\s+/).filter(p => p.trim() !== '');
-            if (parts.length >= 3) {
-                 remessa = parts[parts.findIndex(p => p === ':') + 1] || 'N/A';
-                 data = parts[parts.findIndex(p => p === ':') + 2] || 'N/A';
+            const remIndex = parts.indexOf('Rem');
+            if (remIndex !== -1 && parts.length > remIndex + 2) {
+                remessa = parts[remIndex + 2] || 'N/A';
+            }
+            const dataIndex = parts.indexOf(remessa);
+             if (dataIndex !== -1 && parts.length > dataIndex) {
+                 const potentialDate = parts[dataIndex + 1];
+                 if (/\d{2}\.\d{2}\.\d{4}/.test(potentialDate)) {
+                    data = potentialDate;
+                 }
             }
         }
         
-        // Find BR
         const ceLine = lines.find(l => l.includes('CE '));
         if (ceLine) {
             const ceParts = ceLine.split(/\s+/);
@@ -72,7 +82,6 @@ function parseTxtFile(txtContent: string): TxtData[] {
             if (brPart) br = brPart;
         }
 
-        // Find Ordem
         const linhaLine = lines.find(l => l.includes('Linha :'));
         if (linhaLine) {
             const linhaParts = linhaLine.split('Linha :');
@@ -86,7 +95,6 @@ function parseTxtFile(txtContent: string): TxtData[] {
             }
         }
         
-        // Find QtdEtiqueta
         const qtdCxIndex = lines.findIndex(l => l.trim().startsWith('Qtd Cx'));
         if (qtdCxIndex !== -1 && lines[qtdCxIndex + 1]) {
             const qtdCxText = lines[qtdCxIndex + 1].trim();
@@ -96,12 +104,25 @@ function parseTxtFile(txtContent: string): TxtData[] {
             }
         }
 
-        if (remessa !== 'N/A' || qtdEtiqueta > 0) {
-           txtData.push({ remessa, data, br, ordem, qtdEtiqueta });
+        // Update last valid data if new data is found
+        if (remessa !== 'N/A') lastValidData.remessa = remessa;
+        if (data !== 'N/A') lastValidData.data = data;
+        if (br !== 'N/A') lastValidData.br = br;
+        if (ordem !== 'N/A') lastValidData.ordem = ordem;
+        
+        // Only push if we have a quantity, and use the last valid data if current is N/A
+        if (qtdEtiqueta > 0) {
+           txtData.push({ 
+               remessa: remessa !== 'N/A' ? remessa : lastValidData.remessa,
+               data: data !== 'N/A' ? data : lastValidData.data,
+               br: br !== 'N/A' ? br : lastValidData.br,
+               ordem: ordem !== 'N/A' ? ordem : lastValidData.ordem,
+               qtdEtiqueta 
+           });
         }
     });
 
-    return txtData;
+    return txtData.filter(d => d.remessa !== 'N/A');
 }
 
 
