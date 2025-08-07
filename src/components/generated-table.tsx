@@ -102,7 +102,7 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
       "REMESSA", "DATA", "BR", "CIDADE", "CLIENTE",
       "ORDEM", "QTD ETIQUETA", "Nº CAIXAS", "PARCERIA"
     ];
-    
+
     const createSheetBody = (sheetData: DataRow[]) => sheetData.map(row => ({
       "REMESSA": row.remessa,
       "DATA": row.data,
@@ -123,15 +123,22 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
         worksheet["!cols"] = cols;
       }
     };
-    
+
     const workbook = xlsx.utils.book_new();
-    
-    // Use sortedAndFilteredData for the current view
-    const mainBody = createSheetBody(sortedAndFilteredData);
+
+    // Sheet 1: Main Data (sorted and filtered as on screen)
+    const mainSheetData = showParceriaData ? data : sortedAndFilteredData;
+    const mainBody = createSheetBody(mainSheetData);
     const mainWorksheet = xlsx.utils.json_to_sheet(mainBody, { header });
     autoSizeColumns(mainWorksheet, mainBody);
-    const sheetName = showParceriaData ? "Parceria Bruta" : "Dados Principais";
-    xlsx.utils.book_append_sheet(workbook, mainWorksheet, sheetName);
+    xlsx.utils.book_append_sheet(workbook, mainWorksheet, "Dados Principais");
+
+    // Sheet 2: Parceria Bruta Data (always all parceria data, but sorted)
+    const parceriaSheetData = showParceriaData ? sortedAndFilteredData : parceriaData;
+    const parceriaBody = createSheetBody(parceriaSheetData);
+    const parceriaWorksheet = xlsx.utils.json_to_sheet(parceriaBody, { header });
+    autoSizeColumns(parceriaWorksheet, parceriaBody);
+    xlsx.utils.book_append_sheet(workbook, parceriaWorksheet, "Parceria Bruta");
 
     xlsx.writeFile(workbook, "relatorio_smart_picking.xlsx");
   };
