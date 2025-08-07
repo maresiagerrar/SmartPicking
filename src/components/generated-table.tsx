@@ -96,6 +96,51 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
     setPreviewData(printableData[nextIndex]);
   };
 
+  const processDataForDisplayAndExport = (inputData: DataRow[], applyFilters: boolean) => {
+    let processableData = [...inputData];
+
+    if (applyFilters) {
+        const activeFilters = Object.entries(filters).filter(([, value]) => value);
+        if (activeFilters.length > 0) {
+            processableData = processableData.filter((row) => {
+                if (row.br === 'ATENÇÃO') return true;
+                return activeFilters.every(([key, value]) => {
+                    const rowValue = row[key as keyof DataRow];
+                    return String(rowValue).toLowerCase().includes(String(value).toLowerCase());
+                });
+            });
+        }
+    }
+
+    if (sortConfig !== null) {
+        processableData.sort((a, b) => {
+            if (a.br === 'ATENÇÃO' || b.br === 'ATENÇÃO') return 0;
+            const aValue = a[sortConfig.key];
+            const bValue = b[sortConfig.key];
+            if (typeof aValue === 'number' && typeof bValue === 'number') {
+                if (aValue < bValue) return sortConfig.direction === 'ascending' ? -1 : 1;
+                if (aValue > bValue) return sortConfig.direction === 'ascending' ? 1 : -1;
+                return 0;
+            }
+            if (typeof aValue === 'string' && typeof bValue === 'string') {
+                const comparison = aValue.localeCompare(bValue, 'pt-BR', { numeric: true });
+                return sortConfig.direction === 'ascending' ? comparison : -comparison;
+            }
+            return 0;
+        });
+    }
+
+    if (isReversed) {
+        return [...processableData].reverse();
+    }
+
+    return processableData;
+  };
+  
+  const sortedAndFilteredData = useMemo(() => {
+    return processDataForDisplayAndExport(currentData, true);
+  }, [currentData, filters, sortConfig, isReversed]);
+
 
   const handleExport = () => {
     const header = [
@@ -126,15 +171,14 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
 
     const workbook = xlsx.utils.book_new();
 
-    // Sheet 1: Main Data (sorted and filtered as on screen)
-    const mainSheetData = showParceriaData ? data : sortedAndFilteredData;
-    const mainBody = createSheetBody(mainSheetData);
+    // Sheet 1: Main Data (what's on screen)
+    const mainBody = createSheetBody(sortedAndFilteredData);
     const mainWorksheet = xlsx.utils.json_to_sheet(mainBody, { header });
     autoSizeColumns(mainWorksheet, mainBody);
     xlsx.utils.book_append_sheet(workbook, mainWorksheet, "Dados Principais");
 
-    // Sheet 2: Parceria Bruta Data (always all parceria data, but sorted)
-    const parceriaSheetData = showParceriaData ? sortedAndFilteredData : parceriaData;
+    // Sheet 2: Parceria Bruta Data (unfiltered, but respecting sort/reverse)
+    const parceriaSheetData = processDataForDisplayAndExport(parceriaData, false);
     const parceriaBody = createSheetBody(parceriaSheetData);
     const parceriaWorksheet = xlsx.utils.json_to_sheet(parceriaBody, { header });
     autoSizeColumns(parceriaWorksheet, parceriaBody);
@@ -142,60 +186,6 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
 
     xlsx.writeFile(workbook, "relatorio_smart_picking.xlsx");
   };
-
-  const sortedAndFilteredData = useMemo(() => {
-    const activeFilters = Object.entries(filters).filter(([, value]) => value);
-    let processableData = [...currentData];
-
-    // Filtering
-    if (activeFilters.length > 0) {
-      processableData = processableData.filter((row) => {
-        // Always show attention rows
-        if (row.br === 'ATENÇÃO') return true;
-
-        return activeFilters.every(([key, value]) => {
-          const rowValue = row[key as keyof DataRow];
-          return String(rowValue).toLowerCase().includes(String(value).toLowerCase());
-        });
-      });
-    }
-
-    // Sorting
-    if (sortConfig !== null) {
-      processableData.sort((a, b) => {
-        // Keep "ATENÇÃO" rows sticky to their preceding group
-        // This is a simplified sort, for complex grouping a pre-sort grouping would be better.
-        // For now, we just don't sort attention rows themselves.
-        if (a.br === 'ATENÇÃO' || b.br === 'ATENÇÃO') {
-            return 0;
-        }
-
-        const aValue = a[sortConfig.key];
-        const bValue = b[sortConfig.key];
-
-        // Handle numeric comparison
-        if (typeof aValue === 'number' && typeof bValue === 'number') {
-            if (aValue < bValue) return sortConfig.direction === 'ascending' ? -1 : 1;
-            if (aValue > bValue) return sortConfig.direction === 'ascending' ? 1 : -1;
-            return 0;
-        }
-
-        // Handle string comparison (including formatted sequence)
-        if (typeof aValue === 'string' && typeof bValue === 'string') {
-            const comparison = aValue.localeCompare(bValue, 'pt-BR', { numeric: true });
-            return sortConfig.direction === 'ascending' ? comparison : -comparison;
-        }
-        
-        return 0;
-      });
-    }
-
-    if (isReversed) {
-      return [...processableData].reverse();
-    }
-
-    return processableData;
-  }, [currentData, filters, sortConfig, isReversed]);
 
   const labelCount = useMemo(() => {
     return sortedAndFilteredData.filter(row => row.br !== 'ATENÇÃO').length;
