@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { RotateCcw, X, ChevronDown, ArrowUp, ArrowDown, FileDown, Printer, Eye } from 'lucide-react';
+import { RotateCcw, X, ChevronDown, ArrowUp, ArrowDown, FileDown, Printer, Eye, ArrowUpDown } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   DropdownMenu,
@@ -41,6 +41,7 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
   const [previewData, setPreviewData] = useState<DataRow | null>(null);
   const [printedRows, setPrintedRows] = useState<Set<string>>(new Set());
   const [showParceriaData, setShowParceriaData] = useState(false);
+  const [isReversed, setIsReversed] = useState(false);
   
   const currentData = showParceriaData ? parceriaData : data;
 
@@ -124,20 +125,13 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
     };
     
     const workbook = xlsx.utils.book_new();
-
-    // Main Data Sheet
-    const mainBody = createSheetBody(data);
+    
+    // Use sortedAndFilteredData for the current view
+    const mainBody = createSheetBody(sortedAndFilteredData);
     const mainWorksheet = xlsx.utils.json_to_sheet(mainBody, { header });
     autoSizeColumns(mainWorksheet, mainBody);
-    xlsx.utils.book_append_sheet(workbook, mainWorksheet, "Dados Principais");
-    
-    // Parceria Bruta Sheet
-    if (parceriaData.length > 0) {
-      const parceriaBody = createSheetBody(parceriaData);
-      const parceriaWorksheet = xlsx.utils.json_to_sheet(parceriaBody, { header });
-      autoSizeColumns(parceriaWorksheet, parceriaBody);
-      xlsx.utils.book_append_sheet(workbook, parceriaWorksheet, "Parceria Bruta");
-    }
+    const sheetName = showParceriaData ? "Parceria Bruta" : "Dados Principais";
+    xlsx.utils.book_append_sheet(workbook, mainWorksheet, sheetName);
 
     xlsx.writeFile(workbook, "relatorio_smart_picking.xlsx");
   };
@@ -189,11 +183,15 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
       });
     }
 
+    if (isReversed) {
+      return [...processableData].reverse();
+    }
+
     return processableData;
-  }, [currentData, filters, sortConfig]);
+  }, [currentData, filters, sortConfig, isReversed]);
 
   const labelCount = useMemo(() => {
-    return sortedAndFilteredData.length;
+    return sortedAndFilteredData.filter(row => row.br !== 'ATENÇÃO').length;
   }, [sortedAndFilteredData]);
   
   const HeaderCell = ({ column, label }: { column: keyof DataRow, label: string }) => {
@@ -256,11 +254,15 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
                 ({labelCount} {labelCount === 1 ? 'etiqueta' : 'etiquetas'})
             </span>
            <div className="flex items-center space-x-2">
-            <Switch id="agrupado-switch" checked={showParceriaData} onCheckedChange={setShowParceriaData} />
-            <Label htmlFor="agrupado-switch" variant="toggle">Parceria Bruta</Label>
+            <Switch id="parceria-switch" checked={showParceriaData} onCheckedChange={setShowParceriaData} />
+            <Label htmlFor="parceria-switch" variant="toggle">Parceria Bruta</Label>
           </div>
         </div>
         <div className="flex items-center gap-2">
+            <Button onClick={() => setIsReversed(prev => !prev)} size="sm" variant="outline" title="Inverter Ordem">
+              <ArrowUpDown className="mr-2 h-4 w-4" />
+              Inverter Ordem
+            </Button>
             <Button onClick={handlePrintAll} size="sm" variant="outline">
               <Printer className="mr-2 h-4 w-4" />
               Imprimir
@@ -322,7 +324,6 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
                          <span className={cn(
                             "px-2 py-1 rounded-full text-xs font-medium",
                              row.parceria === 'Sim' && 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
-                             row.parceria === 'Não' && 'opacity-0',
                              row.br === 'ATENÇÃO' && 'opacity-0'
                          )}>
                             {row.parceria === 'Sim' ? 'Sim' : ''}
