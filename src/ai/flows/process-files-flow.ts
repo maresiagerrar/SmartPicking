@@ -219,7 +219,7 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
       for (let i = 0; i < qtdEtiquetasBase; i++) {
         const firstExcelItem = excelItems.length > 0 ? excelItems[0] : null;
         let cliente = firstExcelItem?.cliente || 'N/A';
-        if (clienteMapping[txtItem.br]) {
+        if (clienteMapping[txtItem.br] && (cliente.toUpperCase() === 'SOUZA CRUZ LTDA.' || cliente === 'N/A')) {
             cliente = clienteMapping[txtItem.br];
         }
         
@@ -236,7 +236,7 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
       if (parceriaItems.length > 0) {
           parceriaItems.forEach((parceriaItem) => {
               let cliente = parceriaItem.cliente;
-              if (clienteMapping[txtItem.br]) {
+              if (clienteMapping[txtItem.br] && (cliente.toUpperCase() === 'SOUZA CRUZ LTDA.' || cliente === 'N/A')) {
                   cliente = clienteMapping[txtItem.br];
               }
 
