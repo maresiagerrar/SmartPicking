@@ -4,7 +4,7 @@
  *
  * - processFiles - A function that handles the file processing logic.
  * - ProcessFilesInput - The input type for the processFiles function.
- * - ProcessFilesOutput - The return type for the processFiles function (an array of DataRow).
+ * - ProcessFilesOutput - The return type for the processFiles function.
  */
 
 import { z } from 'zod';
@@ -15,6 +15,7 @@ import { parceriaBrutaData } from '@/lib/parceria-bruta-data';
 const ProcessFilesInputSchema = z.object({
   txtContent: z.string().describe('The content of the uploaded TXT file.'),
   excelContent: z.string().describe('The Base64 encoded content of the uploaded Excel file.'),
+  hub: z.enum(['campinas', 'contagem']).optional().default('campinas'),
 });
 export type ProcessFilesInput = z.infer<typeof ProcessFilesInputSchema>;
 
@@ -39,10 +40,16 @@ export type ProcessFilesOutput = z.infer<typeof ProcessFilesOutputSchema>;
 type TxtData = Omit<DataRow, 'cidade' | 'cliente' | 'nCaixas' | 'parceria'> & { qtdEtiqueta: number };
 type ExcelData = Pick<DataRow, 'remessa' | 'cidade' | 'cliente'> & { sku: string };
 
-
 function parseTxtFile(txtContent: string): TxtData[] {
     const txtData: TxtData[] = [];
-    const lines = txtContent.split(/\r?\n/);
+    
+    // 1. Limpeza inicial: Remover quebras de página e consolidar Doc. Transp quebrado
+    const cleanContent = txtContent
+        .replace(/\f/g, '\n') // Substituir Form Feed por nova linha
+        .replace(/Doc\. Transp : \n/g, 'Doc. Transp : ') // Consolidar linhas quebradas
+        .replace(/Doc\. Transp : \s+/g, 'Doc. Transp : ');
+
+    const lines = cleanContent.split(/\r?\n/);
     
     let currentRemessa = 'N/A';
     let currentData = 'N/A';
@@ -53,63 +60,57 @@ function parseTxtFile(txtContent: string): TxtData[] {
         const line = lines[i].trim();
         if (!line) continue;
 
-        // Identificar Remessa e Data
-        // Tenta encontrar um padrão de 10 dígitos (Remessa) e uma data
-        if (line.includes('Rem')) {
-            const remMatch = line.match(/(\d{10})/);
-            if (remMatch) {
-                currentRemessa = remMatch[1];
-            }
-            
-            const dateMatch = line.match(/(\d{2}\.\d{2}\.\d{4})/);
-            if (dateMatch) {
-                currentData = dateMatch[1];
-            }
+        // Capturar Remessa e Data (Procura padrão de 10 dígitos e data xx.xx.xxxx)
+        const remMatch = line.match(/Rem\s*:\s*(\d{10})/i);
+        if (remMatch) {
+            currentRemessa = remMatch[1];
+        }
+        
+        const dateMatch = line.match(/(\d{2}\.\d{2}\.\d{4})/);
+        if (dateMatch) {
+            currentData = dateMatch[1];
         }
 
-        // Identificar BR
-        if (line.includes('BR')) {
-            const brMatch = line.match(/BR\d+/);
-            if (brMatch) {
-                currentBr = brMatch[0];
-            }
+        // Capturar BR (Padrão BR seguido de números)
+        const brMatch = line.match(/BR\d+/i);
+        if (brMatch) {
+            currentBr = brMatch[0].toUpperCase();
         }
 
-        // Identificar Linha / Ordem
-        if (line.includes('Linha')) {
-            const ordemMatch = line.match(/Linha\s*[:\.]?\s*(\w+)?\s*(\d+)/i);
-            if (ordemMatch) {
-                currentOrdem = ordemMatch[2];
-            } else {
-                const simpleOrdem = line.match(/Linha.*(\d+)/i);
-                if (simpleOrdem) currentOrdem = simpleOrdem[1];
-            }
+        // Capturar Ordem (Linha)
+        const ordemMatch = line.match(/Linha\s*[:\.]?\s*(\w+)?\s*(\d+)/i);
+        if (ordemMatch) {
+            currentOrdem = ordemMatch[2];
         }
 
-        // Identificar Quantidade de Caixas - Gatilho para criar entrada
+        // Gatilho: Quantidade de Caixas
         if (line.startsWith('Qtd Cx')) {
+            // A quantidade geralmente está na próxima linha ou na mesma se o OCR/Parser fundir
+            let qtd = 0;
             const nextLine = lines[i + 1]?.trim();
-            if (nextLine) {
-                const match = nextLine.match(/^(\d+)/);
-                if (match) {
-                    const qtd = parseInt(match[1], 10);
-                    if (qtd > 0 && currentRemessa !== 'N/A') {
-                        txtData.push({
-                            remessa: currentRemessa,
-                            data: currentData,
-                            br: currentBr,
-                            ordem: currentOrdem,
-                            qtdEtiqueta: qtd
-                        });
-                    }
-                }
+            const sameLineMatch = line.match(/Qtd Cx\s+(\d+)/i);
+            const nextLineMatch = nextLine?.match(/^(\d+)/);
+
+            if (sameLineMatch) {
+                qtd = parseInt(sameLineMatch[1], 10);
+            } else if (nextLineMatch) {
+                qtd = parseInt(nextLineMatch[1], 10);
+            }
+
+            if (qtd > 0 && currentRemessa !== 'N/A') {
+                txtData.push({
+                    remessa: currentRemessa,
+                    data: currentData,
+                    br: currentBr,
+                    ordem: currentOrdem,
+                    qtdEtiqueta: qtd
+                });
             }
         }
     }
 
     return txtData;
 }
-
 
 function parseExcelFile(excelContent: string): ExcelData[] {
     const excelData: ExcelData[] = [];
@@ -138,7 +139,6 @@ function parseExcelFile(excelContent: string): ExcelData[] {
           }
         });
     } catch(e) {
-        console.error("Error parsing excel file", e);
         throw new Error("Falha ao analisar o arquivo Excel.");
     }
     return excelData;
@@ -164,7 +164,6 @@ function insertAttentionRows(data: DataRow[]): DataRow[] {
     return result;
 }
 
-
 export async function processFiles(input: ProcessFilesInput): Promise<ProcessFilesOutput> {
     const txtData = parseTxtFile(input.txtContent);
     const excelData = parseExcelFile(input.excelContent);
@@ -180,15 +179,22 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
     const tempMainData: DataRow[] = [];
     const tempParceriaData: DataRow[] = [];
 
-    const clienteMapping: Record<string, string> = {
-      "BR495477": "SJBV - LEME",
-      "BR495480": "SJBV - PIRASSUNUNGA",
-      "BR495489": "SJBV - MOCOCA",
-      "BR495491": "SJBV - SJ BOA VISTA",
-      "BR495492": "SJBV - SJ RIO PARDO",
-      "BR442154": "ITAPEVA",
-      "BR442706": "ITAPEVA",
+    const hubMappings: Record<string, Record<string, string>> = {
+      campinas: {
+        "BR495477": "SJBV - LEME",
+        "BR495480": "SJBV - PIRASSUNUNGA",
+        "BR495489": "SJBV - MOCOCA",
+        "BR495491": "SJBV - SJ BOA VISTA",
+        "BR495492": "SJBV - SJ RIO PARDO",
+        "BR442154": "ITAPEVA",
+        "BR442706": "ITAPEVA",
+      },
+      contagem: {
+        // Futuros mapeamentos para Contagem
+      }
     };
+
+    const clienteMapping = hubMappings[input.hub || 'campinas'] || {};
 
     txtData.forEach((txtItem) => {
       const excelItems = excelDataMap.get(txtItem.remessa) || [];
@@ -204,7 +210,8 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
       for (let i = 0; i < qtdEtiquetasBase; i++) {
         const firstExcelItem = excelItems.length > 0 ? excelItems[0] : null;
         let cliente = firstExcelItem?.cliente || 'N/A';
-        // Lógica estrita: apenas se o cliente for SOUZA CRUZ LTDA.
+        
+        // Regra Estrita: Apenas se o nome do cliente for SOUZA CRUZ LTDA.
         if (clienteMapping[txtItem.br] && cliente.toUpperCase() === 'SOUZA CRUZ LTDA.') {
             cliente = clienteMapping[txtItem.br];
         }
@@ -222,7 +229,7 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
       if (parceriaItems.length > 0) {
           parceriaItems.forEach((parceriaItem) => {
               let cliente = parceriaItem.cliente;
-              // Aplicar mesma lógica estrita para Parceria Bruta
+              
               if (clienteMapping[txtItem.br] && cliente.toUpperCase() === 'SOUZA CRUZ LTDA.') {
                   cliente = clienteMapping[txtItem.br];
               }
