@@ -10,13 +10,11 @@ export default function Home() {
     {
       id: "campinas",
       name: "Campinas",
-      description: "Operação São Paulo (SJBV, Leme, Pirassununga, Itapeva...)",
       color: "#D40511"
     },
     {
       id: "contagem",
       name: "Contagem",
-      description: "Operação Minas Gerais (Região de Contagem e arredores)",
       color: "#FFCC00"
     }
   ];
@@ -44,7 +42,6 @@ export default function Home() {
                   <CardTitle className="text-3xl font-headline mt-4">{hub.name}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-muted-foreground">{hub.description}</p>
                   <div className="mt-6 h-1 w-full bg-muted overflow-hidden">
                     <div className="h-full bg-primary transform -translate-x-full group-hover:translate-x-0 transition-transform duration-500"></div>
                   </div>
