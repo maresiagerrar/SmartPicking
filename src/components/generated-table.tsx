@@ -1,4 +1,3 @@
-
 "use client";
 import { useState, useMemo, KeyboardEvent, useEffect } from 'react';
 import type { DataRow } from '@/lib/types';
@@ -89,7 +88,6 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
             return;
         }
     } else {
-        // Prev logic - not strictly needed by current flow but good to have
         nextIndex = (currentIndex - 1 + printableData.length) % printableData.length;
     }
 
@@ -171,13 +169,11 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
 
     const workbook = xlsx.utils.book_new();
 
-    // Sheet 1: Main Data (what's on screen)
     const mainBody = createSheetBody(sortedAndFilteredData);
     const mainWorksheet = xlsx.utils.json_to_sheet(mainBody, { header });
     autoSizeColumns(mainWorksheet, mainBody);
     xlsx.utils.book_append_sheet(workbook, mainWorksheet, "Dados Principais");
 
-    // Sheet 2: Parceria Bruta Data (unfiltered, but respecting sort/reverse)
     const parceriaSheetData = processDataForDisplayAndExport(parceriaData, false);
     const parceriaBody = createSheetBody(parceriaSheetData);
     const parceriaWorksheet = xlsx.utils.json_to_sheet(parceriaBody, { header });
@@ -357,4 +353,3 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
     </Card>
   );
 }
-    

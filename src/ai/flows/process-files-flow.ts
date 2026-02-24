@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview Processes uploaded text and Excel files to extract structured data.
@@ -43,86 +42,72 @@ type ExcelData = Pick<DataRow, 'remessa' | 'cidade' | 'cliente'> & { sku: string
 
 function parseTxtFile(txtContent: string): TxtData[] {
     const txtData: TxtData[] = [];
+    const lines = txtContent.split(/\r?\n/);
     
-    // Pre-process: remove page breaks and useless lines
-    const cleanedContent = txtContent.replace(/\f/g, '').replace(/Doc\. Transp : \s*[\r\n]/g, '');
-    const blocks = cleanedContent.split('Doc. Transp :').slice(1);
+    let currentRemessa = 'N/A';
+    let currentData = 'N/A';
+    let currentBr = 'N/A';
+    let currentOrdem = 'N/A';
 
-    let lastValidData = { remessa: 'N/A', data: 'N/A', br: 'N/A', ordem: 'N/A' };
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
 
-    blocks.forEach(block => {
-        const lines = block.split(/\r?\n/).filter(l => l.trim() !== '');
-        
-        let remessa = 'N/A';
-        let data = 'N/A';
-        let br = 'N/A';
-        let ordem = 'N/A';
-        let qtdEtiqueta = 0;
-        
-        const remLine = lines.find(l => l.includes('Rem :'));
-        if (remLine) {
-            const parts = remLine.split(/\s+/).filter(p => p.trim() !== '');
-            const remIndex = parts.indexOf('Rem');
-            if (remIndex !== -1 && parts.length > remIndex + 2) {
-                remessa = parts[remIndex + 2] || 'N/A';
+        // Identificar Remessa e Data
+        // Tenta encontrar um padrão de 10 dígitos (Remessa) e uma data
+        if (line.includes('Rem')) {
+            const remMatch = line.match(/(\d{10})/);
+            if (remMatch) {
+                currentRemessa = remMatch[1];
             }
-            const dataIndex = parts.indexOf(remessa);
-             if (dataIndex !== -1 && parts.length > dataIndex) {
-                 const potentialDate = parts[dataIndex + 1];
-                 if (/\d{2}\.\d{2}\.\d{4}/.test(potentialDate)) {
-                    data = potentialDate;
-                 }
+            
+            const dateMatch = line.match(/(\d{2}\.\d{2}\.\d{4})/);
+            if (dateMatch) {
+                currentData = dateMatch[1];
             }
         }
-        
-        const ceLine = lines.find(l => l.includes('CE '));
-        if (ceLine) {
-            const ceParts = ceLine.split(/\s+/);
-            const brPart = ceParts.find(p => p.startsWith('BR'));
-            if (brPart) br = brPart;
+
+        // Identificar BR
+        if (line.includes('BR')) {
+            const brMatch = line.match(/BR\d+/);
+            if (brMatch) {
+                currentBr = brMatch[0];
+            }
         }
 
-        const linhaLine = lines.find(l => l.includes('Linha :'));
-        if (linhaLine) {
-            const linhaParts = linhaLine.split('Linha :');
-            if (linhaParts.length > 1 && linhaParts[1].trim()) {
-                const linhaContent = linhaParts[1].trim().split(/\s+/);
-                if (linhaContent.length > 1 && /^\d+$/.test(linhaContent[1])) {
-                    ordem = linhaContent[1];
-                } else if (/^\d+$/.test(linhaContent[0])) {
-                    ordem = linhaContent[0];
+        // Identificar Linha / Ordem
+        if (line.includes('Linha')) {
+            const ordemMatch = line.match(/Linha\s*[:\.]?\s*(\w+)?\s*(\d+)/i);
+            if (ordemMatch) {
+                currentOrdem = ordemMatch[2];
+            } else {
+                const simpleOrdem = line.match(/Linha.*(\d+)/i);
+                if (simpleOrdem) currentOrdem = simpleOrdem[1];
+            }
+        }
+
+        // Identificar Quantidade de Caixas - Gatilho para criar entrada
+        if (line.startsWith('Qtd Cx')) {
+            const nextLine = lines[i + 1]?.trim();
+            if (nextLine) {
+                const match = nextLine.match(/^(\d+)/);
+                if (match) {
+                    const qtd = parseInt(match[1], 10);
+                    if (qtd > 0 && currentRemessa !== 'N/A') {
+                        txtData.push({
+                            remessa: currentRemessa,
+                            data: currentData,
+                            br: currentBr,
+                            ordem: currentOrdem,
+                            qtdEtiqueta: qtd
+                        });
+                    }
                 }
             }
         }
-        
-        const qtdCxIndex = lines.findIndex(l => l.trim().startsWith('Qtd Cx'));
-        if (qtdCxIndex !== -1 && lines[qtdCxIndex + 1]) {
-            const qtdCxText = lines[qtdCxIndex + 1].trim();
-            const qtdCxMatch = qtdCxText.match(/^(\d+)/);
-            if (qtdCxMatch) {
-                qtdEtiqueta = parseInt(qtdCxMatch[1], 10) || 0;
-            }
-        }
+    }
 
-        // Update last valid data if new data is found
-        if (remessa !== 'N/A') lastValidData.remessa = remessa;
-        if (data !== 'N/A') lastValidData.data = data;
-        if (br !== 'N/A') lastValidData.br = br;
-        if (ordem !== 'N/A') lastValidData.ordem = ordem;
-        
-        // Only push if we have a quantity, and use the last valid data if current is N/A
-        if (qtdEtiqueta > 0) {
-           txtData.push({ 
-               remessa: remessa !== 'N/A' ? remessa : lastValidData.remessa,
-               data: data !== 'N/A' ? data : lastValidData.data,
-               br: br !== 'N/A' ? br : lastValidData.br,
-               ordem: ordem !== 'N/A' ? ordem : lastValidData.ordem,
-               qtdEtiqueta 
-           });
-        }
-    });
-
-    return txtData.filter(d => d.remessa !== 'N/A');
+    return txtData;
 }
 
 
@@ -219,7 +204,8 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
       for (let i = 0; i < qtdEtiquetasBase; i++) {
         const firstExcelItem = excelItems.length > 0 ? excelItems[0] : null;
         let cliente = firstExcelItem?.cliente || 'N/A';
-        if (clienteMapping[txtItem.br] && (cliente.toUpperCase() === 'SOUZA CRUZ LTDA.' || cliente === 'N/A')) {
+        // Lógica estrita: apenas se o cliente for SOUZA CRUZ LTDA.
+        if (clienteMapping[txtItem.br] && cliente.toUpperCase() === 'SOUZA CRUZ LTDA.') {
             cliente = clienteMapping[txtItem.br];
         }
         
@@ -236,7 +222,8 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
       if (parceriaItems.length > 0) {
           parceriaItems.forEach((parceriaItem) => {
               let cliente = parceriaItem.cliente;
-              if (clienteMapping[txtItem.br] && (cliente.toUpperCase() === 'SOUZA CRUZ LTDA.' || cliente === 'N/A')) {
+              // Aplicar mesma lógica estrita para Parceria Bruta
+              if (clienteMapping[txtItem.br] && cliente.toUpperCase() === 'SOUZA CRUZ LTDA.') {
                   cliente = clienteMapping[txtItem.br];
               }
 
