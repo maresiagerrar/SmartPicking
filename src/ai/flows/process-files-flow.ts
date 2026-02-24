@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview Processes uploaded text and Excel files to extract structured data.
@@ -45,7 +44,7 @@ type ExcelData = Pick<DataRow, 'remessa' | 'cidade' | 'cliente'> & { sku: string
 
 function parseTxtFile(txtContent: string): TxtData[] {
     const txtData: TxtData[] = [];
-    const cleanContent = txtContent.replace(/\f/g, '\n');
+    const cleanContent = txtContent.replace(/\f/g, '\n').replace(/Doc\. Transp\s*:\s*\r?\n/gi, '');
     const lines = cleanContent.split(/\r?\n/);
     
     let currentRemessa = 'N/A';
@@ -69,7 +68,7 @@ function parseTxtFile(txtContent: string): TxtData[] {
         const ordemMatch = line.match(/Linha\s*[:\.]?\s*(\w+)?\s*(\d+)/i);
         if (ordemMatch) currentOrdem = ordemMatch[2];
 
-        if (line.startsWith('Qtd Cx')) {
+        if (line.toUpperCase().startsWith('QTD CX')) {
             let qtd = 0;
             const sameLineMatch = line.match(/Qtd Cx\s+(\d+)/i);
             const nextLineMatch = lines[i + 1]?.trim().match(/^(\d+)/);
@@ -192,6 +191,7 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
     };
 
     const clienteMapping = hubMappings[input.hub || 'campinas'] || {};
+    const parceriaText = input.hub === 'contagem' ? 'ESTA REMESSA POSSUI PARCERIA' : 'Sim';
 
     txtData.forEach((txtItem) => {
       const excelItems = excelDataMap.get(txtItem.remessa) || [];
@@ -217,7 +217,7 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
             cliente: cliente,
             qtdEtiqueta: totalEtiquetasRemessa,
             nCaixas: `${String(currentCaixaCounter++).padStart(2, '0')}/${totalEtiquetasRemessaString}`,
-            parceria: parceriaItems.length > 0 ? 'Sim' : 'Não',
+            parceria: parceriaItems.length > 0 ? parceriaText : 'Não',
             notaFiscal: notaFiscal,
         });
       }
@@ -234,7 +234,7 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
               cliente: cliente,
               qtdEtiqueta: totalEtiquetasRemessa,
               nCaixas: `${String(currentCaixaCounter++).padStart(2, '0')}/${totalEtiquetasRemessaString}`,
-              parceria: "Sim",
+              parceria: parceriaText,
               notaFiscal: notaFiscal,
           });
       });

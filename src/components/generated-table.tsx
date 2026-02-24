@@ -1,4 +1,3 @@
-
 "use client";
 import { useState, useMemo, KeyboardEvent, useEffect } from 'react';
 import type { DataRow } from '@/lib/types';
@@ -159,7 +158,7 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
       "ORDEM": row.ordem,
       "QTD ETIQUETA": row.qtdEtiqueta,
       "Nº CAIXAS": row.nCaixas,
-      "PARCERIA": row.parceria === 'Sim' ? 'Sim' : '',
+      "PARCERIA": (row.parceria !== 'Não' && row.parceria !== '') ? row.parceria : '',
       "NOTA FISCAL": row.notaFiscal || ''
     }));
 
@@ -290,7 +289,9 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
               </TableHeader>
               <TableBody>
                 {sortedAndFilteredData.length > 0 ? (
-                  sortedAndFilteredData.map((row, index) => (
+                  sortedAndFilteredData.map((row, index) => {
+                    const isParceria = row.parceria !== 'Não' && row.parceria !== '';
+                    return (
                     <TableRow 
                       key={index} 
                       className={cn(
@@ -313,10 +314,10 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
                       <TableCell>
                          <span className={cn(
                             "px-2 py-1 rounded-full text-xs font-medium",
-                             row.parceria === 'Sim' && 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+                             isParceria && 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
                              row.br === 'ATENÇÃO' && 'opacity-0'
                          )}>
-                            {row.parceria === 'Sim' ? 'Sim' : ''}
+                            {isParceria ? row.parceria : ''}
                          </span>
                       </TableCell>
                       <TableCell className="non-printable">
@@ -328,7 +329,7 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
                         )}
                       </TableCell>
                     </TableRow>
-                  ))
+                  )})
                 ) : (
                   <TableRow>
                     <TableCell colSpan={11} className="text-center h-24 text-muted-foreground">
