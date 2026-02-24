@@ -111,7 +111,7 @@ export const parceriaBrutaData: ParceriaBrutaDataRow[] = [
   { sku: '50066876', material: 'ENGOV AFTER CITRUS 250ML' },
   { sku: '50066917', material: 'ENGOV AFTER PINK LEM FR 250ML' },
   { sku: '50066878', material: 'ENGOV AFTER TANGERINA 250ML' },
-  { sku: '50066879', material: 'ENGOV UP MOR E KIWI LATA 260MI' },
+  { sku: '50066879', material: 'ENGOV UP MOR E KIWI LATA 269ML' },
   { sku: '50066924', material: 'ENGOV UP ORIGINAL LATA 269ML' },
   { sku: '50067094', material: 'MAISMU BEBIDA BAUNILHA C/12' },
   { sku: '50067103', material: 'MAISMU BEBIDA COCO CMILO C/12' },
