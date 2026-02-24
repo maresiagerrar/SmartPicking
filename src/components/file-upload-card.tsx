@@ -5,13 +5,14 @@ import { useState, useRef, type ChangeEvent, type DragEvent } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { FileText, FileSpreadsheet, CheckCircle2, Loader2 } from 'lucide-react';
+import { FileText, FileSpreadsheet, CheckCircle2, Loader2, Truck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from "@/hooks/use-toast";
 
 interface FileUploadCardProps {
-  onProcess: (txtFile: File, excelFile: File) => void;
+  onProcess: (txtFile: File, excelFile: File, shipTrackerFile?: File) => void;
   isLoading: boolean;
+  hub: 'campinas' | 'contagem';
 }
 
 interface FileUploadAreaProps {
@@ -44,29 +45,10 @@ function FileUploadArea({ icon, title, acceptedFiles, file, setFile, id }: FileU
     }
   };
 
-  const handleDragEnter = (e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = (e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-  };
-
-  const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-  };
-
-  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-    handleFileChange(e.dataTransfer.files);
-  };
+  const handleDragEnter = (e: DragEvent<HTMLDivElement>) => { e.preventDefault(); e.stopPropagation(); setIsDragging(true); };
+  const handleDragLeave = (e: DragEvent<HTMLDivElement>) => { e.preventDefault(); e.stopPropagation(); setIsDragging(false); };
+  const handleDragOver = (e: DragEvent<HTMLDivElement>) => { e.preventDefault(); e.stopPropagation(); };
+  const handleDrop = (e: DragEvent<HTMLDivElement>) => { e.preventDefault(); e.stopPropagation(); setIsDragging(false); handleFileChange(e.dataTransfer.files); };
   
   return (
     <div
@@ -107,21 +89,22 @@ function FileUploadArea({ icon, title, acceptedFiles, file, setFile, id }: FileU
   );
 }
 
-export default function FileUploadCard({ onProcess, isLoading }: FileUploadCardProps) {
+export default function FileUploadCard({ onProcess, isLoading, hub }: FileUploadCardProps) {
   const [txtFile, setTxtFile] = useState<File | null>(null);
   const [excelFile, setExcelFile] = useState<File | null>(null);
+  const [shipTrackerFile, setShipTrackerFile] = useState<File | null>(null);
   const { toast } = useToast();
 
   const handleProcessClick = () => {
     if (!txtFile || !excelFile) {
        toast({
         title: "Arquivos Faltando",
-        description: "Por favor, faça o upload de ambos os arquivos para processar.",
+        description: "Por favor, faça o upload dos arquivos obrigatórios (TARJA e VL06O).",
         variant: "destructive",
       });
       return;
     }
-    onProcess(txtFile, excelFile);
+    onProcess(txtFile, excelFile, shipTrackerFile || undefined);
   };
 
   return (
@@ -129,7 +112,7 @@ export default function FileUploadCard({ onProcess, isLoading }: FileUploadCardP
       <CardHeader>
         <CardTitle className="font-headline text-2xl">Faça upload dos arquivos</CardTitle>
       </CardHeader>
-      <CardContent className="grid md:grid-cols-2 gap-6">
+      <CardContent className={cn("grid gap-6", hub === 'contagem' ? "md:grid-cols-3" : "md:grid-cols-2")}>
         <FileUploadArea
           id="txt-upload"
           icon={<FileText className="w-12 h-12 mx-auto" style={{ color: '#FFCC00' }} />}
@@ -146,6 +129,16 @@ export default function FileUploadCard({ onProcess, isLoading }: FileUploadCardP
           file={excelFile}
           setFile={setExcelFile}
         />
+        {hub === 'contagem' && (
+          <FileUploadArea
+            id="ship-tracker-upload"
+            icon={<Truck className="w-12 h-12 mx-auto" style={{ color: '#FFCC00' }} />}
+            title="SHIP TRACKER"
+            acceptedFiles=".xlsx,.xlsm"
+            file={shipTrackerFile}
+            setFile={setShipTrackerFile}
+          />
+        )}
       </CardContent>
       <CardFooter>
         <Button onClick={handleProcessClick} disabled={isLoading || !txtFile || !excelFile} className="w-full md:w-auto ml-auto" size="lg" style={{ backgroundColor: '#D40511' }}>

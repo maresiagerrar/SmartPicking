@@ -1,3 +1,4 @@
+
 "use client";
 import { useState, useMemo, KeyboardEvent, useEffect } from 'react';
 import type { DataRow } from '@/lib/types';
@@ -84,7 +85,7 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
     if (direction === 'next') {
         nextIndex = currentIndex + 1;
         if (nextIndex >= printableData.length) {
-            setPreviewData(null); // Fecha se for a última
+            setPreviewData(null);
             return;
         }
     } else {
@@ -139,11 +140,14 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
     return processDataForDisplayAndExport(currentData, true);
   }, [currentData, filters, sortConfig, isReversed]);
 
+  const hasNotaFiscal = useMemo(() => {
+    return sortedAndFilteredData.some(row => row.notaFiscal);
+  }, [sortedAndFilteredData]);
 
   const handleExport = () => {
     const header = [
       "REMESSA", "DATA", "BR", "CIDADE", "CLIENTE",
-      "ORDEM", "QTD ETIQUETA", "Nº CAIXAS", "PARCERIA"
+      "ORDEM", "QTD ETIQUETA", "Nº CAIXAS", "PARCERIA", "NOTA FISCAL"
     ];
 
     const createSheetBody = (sheetData: DataRow[]) => sheetData.map(row => ({
@@ -155,7 +159,8 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
       "ORDEM": row.ordem,
       "QTD ETIQUETA": row.qtdEtiqueta,
       "Nº CAIXAS": row.nCaixas,
-      "PARCERIA": row.parceria === 'Sim' ? 'Sim' : ''
+      "PARCERIA": row.parceria === 'Sim' ? 'Sim' : '',
+      "NOTA FISCAL": row.notaFiscal || ''
     }));
 
     const autoSizeColumns = (worksheet: xlsx.WorkSheet, body: any[]) => {
@@ -189,17 +194,8 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
   
   const HeaderCell = ({ column, label }: { column: keyof DataRow, label: string }) => {
     const [inputValue, setInputValue] = useState(filters[column] || '');
-
-    const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Enter') {
-            handleFilterChange(column, inputValue);
-        }
-    };
-    
-    useEffect(() => {
-        setInputValue(filters[column] || '');
-    }, [filters, column]);
-
+    const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => { if (e.key === 'Enter') handleFilterChange(column, inputValue); };
+    useEffect(() => { setInputValue(filters[column] || ''); }, [filters, column]);
 
     return (
     <div className="flex items-center gap-2">
@@ -221,7 +217,6 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
                     onChange={(e) => setInputValue(e.target.value)}
                     onKeyDown={handleKeyDown}
                     onClick={(e) => e.stopPropagation()}
-                    aria-label={`Filter by ${column}`}
                   />
                 </div>
                 <DropdownMenuSeparator />
@@ -252,7 +247,7 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
           </div>
         </div>
         <div className="flex items-center gap-2">
-            <Button onClick={() => setIsReversed(prev => !prev)} size="sm" variant="outline" title="Inverter Ordem">
+            <Button onClick={() => setIsReversed(prev => !prev)} size="sm" variant="outline">
               <ArrowUpDown className="mr-2 h-4 w-4" />
               Inverter Ordem
             </Button>
@@ -288,6 +283,7 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
                   <TableHead><HeaderCell column="ordem" label="ORDEM"/></TableHead>
                   <TableHead><HeaderCell column="qtdEtiqueta" label="QTD ETIQUETA"/></TableHead>
                   <TableHead><HeaderCell column="nCaixas" label="Nº CAIXAS"/></TableHead>
+                  {hasNotaFiscal && <TableHead><HeaderCell column="notaFiscal" label="NOTA FISCAL"/></TableHead>}
                   <TableHead><HeaderCell column="parceria" label="PARCERIA"/></TableHead>
                   <TableHead className="non-printable">Ações</TableHead>
                 </TableRow>
@@ -313,6 +309,7 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
                         {row.br === 'ATENÇÃO' ? '' : String(row.qtdEtiqueta).padStart(2, '0')}
                       </TableCell>
                       <TableCell className="text-center">{row.nCaixas}</TableCell>
+                      {hasNotaFiscal && <TableCell>{row.notaFiscal || ''}</TableCell>}
                       <TableCell>
                          <span className={cn(
                             "px-2 py-1 rounded-full text-xs font-medium",
@@ -334,7 +331,7 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={10} className="text-center h-24 text-muted-foreground">
+                    <TableCell colSpan={11} className="text-center h-24 text-muted-foreground">
                       Nenhum resultado encontrado.
                     </TableCell>
                   </TableRow>

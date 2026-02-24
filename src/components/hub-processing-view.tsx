@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -30,17 +31,24 @@ export default function HubProcessingView({ hub }: HubProcessingViewProps) {
     return window.btoa(binary);
   }
 
-  const handleProcessing = async (txtFile: File, excelFile: File) => {
+  const handleProcessing = async (txtFile: File, excelFile: File, shipTrackerFile?: File) => {
     setIsLoading(true);
 
     try {
       const txtContent = await txtFile.text();
       const excelContent = await excelFile.arrayBuffer();
       const excelBase64 = arrayBufferToBase64(excelContent);
+      
+      let shipTrackerBase64: string | undefined = undefined;
+      if (shipTrackerFile) {
+          const shipTrackerBuffer = await shipTrackerFile.arrayBuffer();
+          shipTrackerBase64 = arrayBufferToBase64(shipTrackerBuffer);
+      }
 
       const result = await processFiles({ 
         txtContent, 
         excelContent: excelBase64,
+        shipTrackerContent: shipTrackerBase64,
         hub: hub
       });
       
@@ -86,7 +94,7 @@ export default function HubProcessingView({ hub }: HubProcessingViewProps) {
       </div>
 
       { !mainData ? (
-        <FileUploadCard onProcess={handleProcessing} isLoading={isLoading} />
+        <FileUploadCard onProcess={handleProcessing} isLoading={isLoading} hub={hub} />
       ) : (
         <div className="printable-area">
           <GeneratedTable data={mainData} parceriaData={parceriaData || []} onReset={handleReset} />
