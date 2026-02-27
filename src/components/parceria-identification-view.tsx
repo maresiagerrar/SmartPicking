@@ -99,6 +99,7 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
         return found !== -1 ? found : defaultIdx;
       };
 
+      // Mapeamento dinâmico das colunas pelos nomes
       const idx = {
         fornecimento: findColIdx(['FORNECIMENTO', 'DOC. TRANSPORTE', 'REMESSA'], 0),
         data: findColIdx(['DATA PLANEJADA', 'DATA DE ENTREGA', 'DATA'], 1),
@@ -107,20 +108,23 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
         material: findColIdx(['MATERIAL', 'SKU'], 12),
         denominacao: findColIdx(['DENOMINAÇÃO', 'DESCRIÇÃO'], 13),
         qtd: findColIdx(['QTD', 'QUANTIDADE', 'QTD.FORN.'], 14),
-        carro: findColIdx(['CARRO', 'VEICULO', 'PLACA'], 17),
+        carro: findColIdx(['CARRO', 'VEICULO', 'PLACA'], 17), // Coluna R
         localidade: findColIdx(['LOCALIDADE', 'ESTOQUE'], 18),
-        linha: findColIdx(['LINHA', 'ROTA'], 19),
-        ce: findColIdx(['CE', 'CARREGAMENTO', 'NÚMERO CE'], 82)
+        linha: findColIdx(['LINHA', 'ROTA'], 19), // Coluna T
+        ce: findColIdx(['CE', 'CARREGAMENTO', 'NÚMERO CE', 'CARREG'], 82) // Coluna CE
       };
 
       const groupedMap = new Map<string, IdentificationData>();
 
       json.slice(1).forEach(row => {
+        // Puxa o valor da coluna CE (índice mapeado) para identificar a folha
         const ceOriginal = String(row[idx.ce] || '').trim();
         const dataEntrega = formatExcelDate(row[idx.data]);
         
+        // Se CE for vazio ou 0, ignoramos ou tratamos
         if (!ceOriginal || ceOriginal === '0' || !dataEntrega) return;
 
+        // Unificamos por CE + DATA conforme solicitado
         const groupKey = `${ceOriginal}|${dataEntrega}`;
 
         const material = String(row[idx.material] || '').trim();
@@ -155,7 +159,7 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
           if (!existing.recebedor && recebedor) existing.recebedor = recebedor;
         } else {
           groupedMap.set(groupKey, {
-            fornecimento: ceOriginal,
+            fornecimento: ceOriginal, // Usamos o CE como código principal da folha
             cidade,
             recebedor,
             dataEntrega,
@@ -171,15 +175,15 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
 
       if (extractedData.length === 0) {
         toast({
-          title: "Nenhum CE encontrado",
-          description: "Verifique se a coluna 'CE' possui valores válidos.",
+          title: "Nenhum dado válido encontrado",
+          description: "Verifique se o arquivo possui as colunas necessárias (CE, Data, etc).",
           variant: "destructive",
         });
       } else {
         setData(extractedData);
         toast({
           title: "Sucesso!",
-          description: `${extractedData.length} identificações de CE/Data geradas.`,
+          description: `${extractedData.length} folhas de identificação geradas.`,
         });
       }
     } catch (error) {
@@ -233,10 +237,12 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
     setIsGeneratingPDF(true);
     setPdfProgress(0);
     
+    // Configura jsPDF com compressão ativada
     const doc = new jsPDF({
       orientation: 'p',
       unit: 'mm',
-      format: 'a4'
+      format: 'a4',
+      compress: true
     });
 
     const container = pdfContainerRef.current;
@@ -248,7 +254,8 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
     setIsBulkPrinting(true);
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 800));
+      // Pequeno atraso para garantir renderização do container invisível
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       const pages = container.querySelectorAll('.printable-area');
       
@@ -257,17 +264,24 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
         
         const page = pages[i] as HTMLElement;
         
+        // Escala reduzida para 1.5 para salvar memória sem perder muita qualidade
         const canvas = await html2canvas(page, {
-          scale: 2,
+          scale: 1.5,
           useCORS: true,
           logging: false,
-          backgroundColor: '#ffffff'
+          backgroundColor: '#ffffff',
+          windowWidth: 794, // Largura aproximada de A4 em 96dpi
         });
         
-        const imgData = canvas.toDataURL('image/png');
+        // Usa JPEG com compressão rápida para evitar RangeError no buffer de string
+        const imgData = canvas.toDataURL('image/jpeg', 0.85);
         
         if (i > 0) doc.addPage();
-        doc.addImage(imgData, 'PNG', 0, 0, 210, 297);
+        doc.addImage(imgData, 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
+        
+        // Limpeza de memória do canvas para a próxima iteração
+        canvas.width = 0;
+        canvas.height = 0;
       }
 
       const fileName = `identificacao_CE_${hub}_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`;
@@ -281,7 +295,7 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
       console.error(err);
       toast({
         title: "Erro ao gerar PDF",
-        description: "Ocorreu um problema ao processar as páginas.",
+        description: "O volume de dados é muito alto. Tente filtrar por data antes de baixar.",
         variant: "destructive",
       });
     } finally {
@@ -330,20 +344,24 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
     <div className="space-y-6">
       {isGeneratingPDF && (
         <div className="fixed inset-0 z-[100] bg-background/80 backdrop-blur-sm flex items-center justify-center p-6">
-          <Card className="w-full max-w-md shadow-2xl">
+          <Card className="w-full max-w-md shadow-2xl border-2 border-primary">
             <CardHeader>
-              <CardTitle className="text-center font-headline">Gerando PDF dos CEs...</CardTitle>
+              <CardTitle className="text-center font-headline">Gerando Arquivo PDF...</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <Progress value={pdfProgress} className="h-4" />
               <p className="text-center text-sm font-medium text-muted-foreground">
                 Processando página {Math.ceil((pdfProgress / 100) * filteredData.length)} de {filteredData.length}
               </p>
+              <p className="text-xs text-center text-muted-foreground italic">
+                Aguarde a conclusão, o download iniciará automaticamente.
+              </p>
             </CardContent>
           </Card>
         </div>
       )}
 
+      {/* Container invisível para captura do PDF */}
       <div 
         ref={pdfContainerRef} 
         style={{ 
@@ -402,7 +420,7 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
           {file && data.length === 0 && (
             <Button onClick={processFile} disabled={isLoading} style={{ backgroundColor: '#D40511' }}>
               {isLoading ? <Loader2 className="animate-spin mr-2" /> : <Search className="mr-2" />}
-              Agrupar por CE e Data
+              Gerar Folhas por CE e Data
             </Button>
           )}
         </CardFooter>
@@ -419,7 +437,7 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
               </Button>
               <Button onClick={downloadDirectPDF} className="bg-primary hover:bg-primary/90">
                 <Download className="mr-2 h-4 w-4" />
-                Download PDF
+                Baixar PDF Direto
               </Button>
               <Button onClick={handleBulkPrint} variant="outline" className="bg-accent/10 text-accent hover:bg-accent/20">
                 <Printer className="mr-2 h-4 w-4" />
