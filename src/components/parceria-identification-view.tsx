@@ -5,7 +5,7 @@ import { useState, useRef, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { FileSpreadsheet, CheckCircle2, Loader2, Printer, Search, X, Table as TableIcon, FileDown } from 'lucide-react';
+import { FileSpreadsheet, CheckCircle2, Loader2, Printer, Search, X, Table as TableIcon, FileDown, FileText } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from "@/hooks/use-toast";
@@ -89,7 +89,6 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
         const qtd = Number(row[14] || 0);
         const dataEntrega = formatExcelDate(row[1]);
         
-        // Coluna R (Carro) é índice 17. Coluna T (Linha) é índice 19.
         const carro = String(row[17] || '').trim();
         const linha = String(row[19] || '').trim();
 
@@ -102,7 +101,6 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
         if (groupedMap.has(fornecimento)) {
           const existing = groupedMap.get(fornecimento)!;
           existing.items.push(newItem);
-          // Atualiza a informação de linha/carro se ela for encontrada em linhas subsequentes
           if (!existing.carro && carro) existing.carro = carro;
           if (!existing.linha && linha) existing.linha = linha;
         } else {
@@ -169,6 +167,32 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
       window.print();
       setIsBulkPrinting(false);
     }, 500);
+  };
+
+  const exportToExcel = () => {
+    if (filteredData.length === 0) return;
+    
+    const exportData = filteredData.map(item => ({
+      "Fornecimento": item.fornecimento,
+      "Data Entrega": item.dataEntrega,
+      "Cidade": item.cidade,
+      "Recebedor": item.recebedor,
+      "Carro (R)": item.carro,
+      "Linha (T)": item.linha,
+      "Localidade": item.localidade,
+      "Qtd SKUs": item.items.length,
+      "Total UN": item.items.reduce((acc, i) => acc + i.qtd, 0)
+    }));
+
+    const worksheet = xlsx.utils.json_to_sheet(exportData);
+    const workbook = xlsx.utils.book_new();
+    xlsx.utils.book_append_sheet(workbook, worksheet, "Relatório Parceria");
+    xlsx.writeFile(workbook, `relatorio_parceria_${hub}_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.xlsx`);
+    
+    toast({
+      title: "Download iniciado",
+      description: "O arquivo Excel foi gerado com sucesso.",
+    });
   };
 
   if (isBulkPrinting) {
@@ -246,18 +270,22 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
 
       {data.length > 0 && (
         <Card className="shadow-lg animate-fade-in non-printable">
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <CardTitle className="text-xl font-headline">Remessas Consolidadas ({filteredData.length})</CardTitle>
-            <div className="flex items-center gap-2">
-              <Button onClick={handleBulkPrint} className="bg-green-700 hover:bg-green-800">
+            <div className="flex flex-wrap items-center gap-2">
+              <Button onClick={exportToExcel} variant="outline" className="border-green-600 text-green-700 hover:bg-green-50">
                 <FileDown className="mr-2 h-4 w-4" />
-                Gerar PDF Único
+                Download Excel
+              </Button>
+              <Button onClick={handleBulkPrint} className="bg-green-700 hover:bg-green-800">
+                <FileText className="mr-2 h-4 w-4" />
+                Gerar PDF (Tudo)
               </Button>
               <div className="relative">
                 <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input 
-                  placeholder="Buscar remessa, cidade ou carro..." 
-                  className="pl-8 w-64" 
+                  placeholder="Buscar remessa, cidade..." 
+                  className="pl-8 w-48 md:w-64" 
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -276,7 +304,7 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
                     <TableHead>Data Entrega</TableHead>
                     <TableHead>Cidade</TableHead>
                     <TableHead className="text-center">Qtd Itens</TableHead>
-                    <TableHead className="text-center">Total UDC</TableHead>
+                    <TableHead className="text-center">Total UN</TableHead>
                     <TableHead className="text-center">Carro (R)</TableHead>
                     <TableHead className="text-center">Linha (T)</TableHead>
                     <TableHead className="text-right">Ação</TableHead>
