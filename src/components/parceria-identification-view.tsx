@@ -5,13 +5,16 @@ import { useState, useRef, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { FileSpreadsheet, CheckCircle2, Loader2, Printer, Search, X, Table as TableIcon, FileDown, FileText } from 'lucide-react';
+import { FileSpreadsheet, CheckCircle2, Loader2, Printer, Search, X, Table as TableIcon, FileDown, FileText, Download } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Progress } from '@/components/ui/progress';
 import { useToast } from "@/hooks/use-toast";
 import * as xlsx from 'xlsx';
 import { cn } from '@/lib/utils';
 import ParceriaIdentificationLabel, { type IdentificationData } from './parceria-identification-label';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 
 interface ParceriaIdentificationViewProps {
   hub: 'campinas' | 'contagem';
@@ -21,10 +24,13 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
   const [file, setFile] = useState<File | null>(null);
   const [data, setData] = useState<IdentificationData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [pdfProgress, setPdfProgress] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedItem, setSelectedItem] = useState<IdentificationData | null>(null);
   const [isBulkPrinting, setIsBulkPrinting] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const pdfContainerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   const formatExcelDate = (val: any) => {
@@ -169,6 +175,68 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
     }, 500);
   };
 
+  const downloadDirectPDF = async () => {
+    if (filteredData.length === 0) return;
+    
+    setIsGeneratingPDF(true);
+    setPdfProgress(0);
+    
+    const doc = new jsPDF({
+      orientation: 'p',
+      unit: 'mm',
+      format: 'a4'
+    });
+
+    const container = pdfContainerRef.current;
+    if (!container) return;
+
+    // Mostrar o container temporariamente para o html2canvas
+    setIsBulkPrinting(true);
+
+    try {
+      for (let i = 0; i < filteredData.length; i++) {
+        setPdfProgress(Math.round(((i + 1) / filteredData.length) * 100));
+        
+        // Selecionar cada página A4 individualmente dentro do container
+        const pages = container.querySelectorAll('.printable-area');
+        const page = pages[i] as HTMLElement;
+        
+        if (page) {
+          const canvas = await html2canvas(page, {
+            scale: 2, // Aumentar escala para melhor resolução
+            useCORS: true,
+            logging: false,
+          });
+          
+          const imgData = canvas.toDataURL('image/png');
+          
+          if (i > 0) doc.addPage();
+          
+          doc.addImage(imgData, 'PNG', 0, 0, 210, 297);
+        }
+      }
+
+      const fileName = `parceria_bruta_${hub}_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`;
+      doc.save(fileName);
+      
+      toast({
+        title: "Download concluído",
+        description: "O arquivo PDF foi salvo na sua máquina.",
+      });
+    } catch (err) {
+      console.error(err);
+      toast({
+        title: "Erro ao gerar PDF",
+        description: "Ocorreu um problema ao processar as páginas.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingPDF(false);
+      setIsBulkPrinting(false);
+      setPdfProgress(0);
+    }
+  };
+
   const exportToExcel = () => {
     if (filteredData.length === 0) return;
     
@@ -195,7 +263,7 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
     });
   };
 
-  if (isBulkPrinting) {
+  if (isBulkPrinting && !isGeneratingPDF) {
     return (
       <div className="printable-area">
         {filteredData.map((item, idx) => (
@@ -208,6 +276,28 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
       </div>
     );
   }
+
+  // Div escondida para renderização do PDF via html2canvas
+  const HiddenPDFContent = () => (
+    <div 
+      ref={pdfContainerRef} 
+      style={{ 
+        position: 'absolute', 
+        left: '-10000px', 
+        top: '-10000px',
+        zIndex: -1,
+        visibility: 'visible' 
+      }}
+    >
+      {filteredData.map((item, idx) => (
+        <ParceriaIdentificationLabel 
+          key={idx}
+          data={item} 
+          hideControls={true}
+        />
+      ))}
+    </div>
+  );
 
   if (selectedItem) {
     return (
@@ -223,6 +313,25 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
 
   return (
     <div className="space-y-6">
+      {isGeneratingPDF && (
+        <div className="fixed inset-0 z-[100] bg-background/80 backdrop-blur-sm flex items-center justify-center p-6">
+          <Card className="w-full max-w-md shadow-2xl">
+            <CardHeader>
+              <CardTitle className="text-center font-headline">Gerando Arquivo PDF...</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Progress value={pdfProgress} className="h-4" />
+              <p className="text-center text-sm font-medium text-muted-foreground">
+                Processando página {Math.ceil((pdfProgress / 100) * filteredData.length)} de {filteredData.length}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Container escondido para geração do PDF */}
+      {isGeneratingPDF && <HiddenPDFContent />}
+
       <Card className="shadow-lg border-2 border-accent/20 non-printable">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 font-headline uppercase">
@@ -277,9 +386,13 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
                 <FileDown className="mr-2 h-4 w-4" />
                 Download Excel
               </Button>
-              <Button onClick={handleBulkPrint} className="bg-green-700 hover:bg-green-800">
-                <FileText className="mr-2 h-4 w-4" />
-                Gerar PDF (Tudo)
+              <Button onClick={downloadDirectPDF} className="bg-primary hover:bg-primary/90">
+                <Download className="mr-2 h-4 w-4" />
+                Baixar PDF Direto
+              </Button>
+              <Button onClick={handleBulkPrint} variant="outline" className="bg-accent/10 text-accent hover:bg-accent/20">
+                <Printer className="mr-2 h-4 w-4" />
+                Imprimir Tudo
               </Button>
               <div className="relative">
                 <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
