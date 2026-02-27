@@ -26,6 +26,19 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
   const inputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
+  const formatExcelDate = (val: any) => {
+    if (!val) return '';
+    if (val instanceof Date) {
+      return val.toLocaleDateString('pt-BR');
+    }
+    if (typeof val === 'number') {
+      // Excel serial date to JS Date conversion
+      const date = new Date(Math.round((val - 25569) * 86400 * 1000));
+      return date.toLocaleDateString('pt-BR');
+    }
+    return String(val).trim();
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
@@ -47,7 +60,7 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
 
     try {
       const buffer = await file.arrayBuffer();
-      const workbook = xlsx.read(buffer, { type: 'buffer' });
+      const workbook = xlsx.read(buffer, { type: 'buffer', cellDates: true });
       const sheetName = "VL06O";
       
       if (!workbook.SheetNames.includes(sheetName)) {
@@ -74,7 +87,7 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
         const material = String(row[12] || '').trim();
         const denominacao = String(row[13] || '').trim();
         const qtd = Number(row[14] || 0);
-        const dataEntrega = String(row[1] || '').trim();
+        const dataEntrega = formatExcelDate(row[1]);
 
         const newItem = {
           material,
