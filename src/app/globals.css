@@ -81,16 +81,13 @@
     visibility: visible;
   }
   
-  /* Posiciona a área imprimível no topo da página */
+  /* Configuração para multi-página */
   .printable-area {
-    position: absolute;
-    left: 0;
-    top: 0;
+    position: relative !important; /* IMPORTANTE: Não usar absolute para multi-página */
+    display: block !important;
     width: 100% !important;
-    height: auto !important;
     margin: 0 !important;
     padding: 0 !important;
-    display: block !important;
     background: white !important;
     overflow: visible !important;
   }
@@ -101,18 +98,21 @@
   header, 
   footer,
   .toaster,
-  .toast {
+  .toast,
+  button,
+  .dialog-close {
     display: none !important;
     visibility: hidden !important;
   }
   
   .page-break {
-    page-break-after: always;
-    break-after: page;
+    page-break-after: always !important;
+    break-after: page !important;
+    display: block !important;
   }
 
   @page {
-    size: A4;
+    size: auto; /* Mantém o tamanho configurado no conteúdo ou A4 */
     margin: 0;
   }
 }

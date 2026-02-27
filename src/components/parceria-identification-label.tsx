@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Button } from "./ui/button";
@@ -63,8 +62,8 @@ export default function ParceriaIdentificationLabel({
               </Button>
             )}
             {currentIndex !== undefined && totalItems !== undefined && (
-              <span className="text-sm font-medium">
-                CE {currentIndex + 1} de {totalItems}
+              <span className="text-sm font-medium text-black">
+                Página {currentIndex + 1} de {totalItems}
               </span>
             )}
           </div>
@@ -91,7 +90,8 @@ export default function ParceriaIdentificationLabel({
       <div className="printable-area bg-white border shadow-sm print:shadow-none print:border-none overflow-hidden flex flex-col font-sans" 
            style={{ 
              width: '210mm', 
-             height: '297mm', 
+             minHeight: '297mm', 
+             height: hideControls ? '297mm' : 'auto',
              padding: '15mm',
              boxSizing: 'border-box',
              backgroundColor: 'white'
@@ -136,7 +136,7 @@ export default function ParceriaIdentificationLabel({
                         </tr>
                     </thead>
                     <tbody>
-                        {data.items.slice(0, 15).map((item, idx) => (
+                        {data.items.slice(0, 18).map((item, idx) => (
                             <tr key={idx} className="border-b border-gray-400 last:border-0">
                                 <td className="p-2 text-sm font-mono border-r border-gray-400">{item.material}</td>
                                 <td className="p-2 text-sm font-bold uppercase leading-tight border-r border-gray-400">{item.denominacao}</td>
@@ -151,9 +151,9 @@ export default function ParceriaIdentificationLabel({
                         </tr>
                     </tfoot>
                 </table>
-                {data.items.length > 15 && (
+                {data.items.length > 18 && (
                   <div className="p-1 bg-yellow-50 text-[10px] text-center font-bold">
-                    * Lista limitada aos primeiros 15 itens na visualização impressa.
+                    * Lista limitada aos primeiros 18 itens na visualização impressa.
                   </div>
                 )}
             </div>
@@ -186,22 +186,6 @@ export default function ParceriaIdentificationLabel({
           </div>
         </div>
       </div>
-      
-      <style jsx global>{`
-        @media print {
-          .printable-area {
-            visibility: visible !important;
-            display: block !important;
-            width: 210mm !important;
-            height: 297mm !important;
-            margin: 0 !important;
-            padding: 15mm !important;
-            border: none !important;
-            box-shadow: none !important;
-            background: white !important;
-          }
-        }
-      `}</style>
     </div>
   );
 }
