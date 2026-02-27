@@ -42,6 +42,13 @@ export type ProcessFilesOutput = z.infer<typeof ProcessFilesOutputSchema>;
 type TxtData = Omit<DataRow, 'cidade' | 'cliente' | 'nCaixas' | 'parceria' | 'notaFiscal'> & { qtdEtiqueta: number };
 type ExcelData = Pick<DataRow, 'remessa' | 'cidade' | 'cliente'> & { sku: string };
 
+/**
+ * Normaliza o número da remessa removendo zeros à esquerda e espaços.
+ */
+function normalizeRemessa(rem: string): string {
+    return String(rem).trim().replace(/^0+/, '');
+}
+
 function parseTxtFile(txtContent: string): TxtData[] {
     const txtData: TxtData[] = [];
     const cleanContent = txtContent.replace(/\f/g, '\n').replace(/Doc\. Transp\s*:\s*\r?\n/gi, '');
@@ -56,7 +63,7 @@ function parseTxtFile(txtContent: string): TxtData[] {
         const line = lines[i].trim();
         if (!line) continue;
 
-        const remMatch = line.match(/Rem\s*:\s*(\d{10})/i);
+        const remMatch = line.match(/Rem\s*:\s*(\d+)/i);
         if (remMatch) currentRemessa = remMatch[1];
         
         const dateMatch = line.match(/(\d{2}\.\d{2}\.\d{4})/);
@@ -135,7 +142,7 @@ function parseShipTracker(content: string): Map<string, string> {
             const remessa = row[1]; // Coluna B (Fornecimento)
             const notaFiscal = row[6]; // Coluna G (Nota Fiscal Number)
             if (remessa && notaFiscal) {
-                mapping.set(String(remessa).trim(), String(notaFiscal).trim());
+                mapping.set(normalizeRemessa(String(remessa)), String(notaFiscal).trim());
             }
         });
     } catch(e) {
@@ -163,27 +170,32 @@ function insertAttentionRows(data: DataRow[]): DataRow[] {
 
 export async function processFiles(input: ProcessFilesInput): Promise<ProcessFilesOutput> {
     const txtDataRaw = parseTxtFile(input.txtContent);
-    const excelData = parseExcelFile(input.excelContent);
+    const excelDataRaw = parseExcelFile(input.excelContent);
     const shipTrackerMap = input.shipTrackerContent ? parseShipTracker(input.shipTrackerContent) : new Map<string, string>();
     
-    // Consolidação de remessas: Agrupa por número de remessa e soma as quantidades
+    // Consolidação de remessas do TXT: Agrupa por número de remessa normalizado e soma as quantidades
     const aggregatedTxtMap = new Map<string, TxtData>();
     txtDataRaw.forEach(item => {
-        if (aggregatedTxtMap.has(item.remessa)) {
-            const existing = aggregatedTxtMap.get(item.remessa)!;
+        const normRem = normalizeRemessa(item.remessa);
+        if (aggregatedTxtMap.has(normRem)) {
+            const existing = aggregatedTxtMap.get(normRem)!;
             existing.qtdEtiqueta += item.qtdEtiqueta;
         } else {
-            aggregatedTxtMap.set(item.remessa, { ...item });
+            // Mantemos a remessa original para exibição, mas usamos a normalizada como chave
+            aggregatedTxtMap.set(normRem, { ...item });
         }
     });
     const txtData = Array.from(aggregatedTxtMap.values());
 
     const parceriaSkuSet = new Set(parceriaBrutaData.map(item => item.sku));
+    
+    // Agrupa dados do Excel por remessa normalizada
     const excelDataMap = new Map<string, ExcelData[]>();
-    excelData.forEach(item => {
-        const existing = excelDataMap.get(item.remessa) || [];
+    excelDataRaw.forEach(item => {
+        const normRem = normalizeRemessa(item.remessa);
+        const existing = excelDataMap.get(normRem) || [];
         existing.push(item);
-        excelDataMap.set(item.remessa, existing);
+        excelDataMap.set(normRem, existing);
     });
 
     const tempMainData: DataRow[] = [];
@@ -206,16 +218,18 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
     const parceriaText = input.hub === 'contagem' ? 'ESTA REMESSA POSSUI PARCERIA' : 'Sim';
 
     txtData.forEach((txtItem) => {
-      const excelItems = excelDataMap.get(txtItem.remessa) || [];
+      const normRem = normalizeRemessa(txtItem.remessa);
+      const excelItems = excelDataMap.get(normRem) || [];
       const parceriaItems = excelItems.filter(item => parceriaSkuSet.has(item.sku) && item.cliente !== 'N/A');
       
       const qtdEtiquetasBase = txtItem.qtdEtiqueta > 0 ? txtItem.qtdEtiqueta : 0;
       const totalEtiquetasRemessa = qtdEtiquetasBase + parceriaItems.length;
       const totalEtiquetasRemessaString = String(totalEtiquetasRemessa).padStart(2, '0');
-      const notaFiscal = shipTrackerMap.get(txtItem.remessa);
+      const notaFiscal = shipTrackerMap.get(normRem);
       
       let currentCaixaCounter = 1;
 
+      // Labels da remessa base
       for (let i = 0; i < qtdEtiquetasBase; i++) {
         const firstExcelItem = excelItems.length > 0 ? excelItems[0] : null;
         let cliente = firstExcelItem?.cliente || 'N/A';
@@ -234,6 +248,7 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
         });
       }
 
+      // Labels de parceria
       parceriaItems.forEach((parceriaItem) => {
           let cliente = parceriaItem.cliente;
           if (clienteMapping[txtItem.br] && cliente.toUpperCase() === 'SOUZA CRUZ LTDA.') {
