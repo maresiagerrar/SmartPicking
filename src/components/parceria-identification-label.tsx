@@ -13,7 +13,7 @@ export type IdentificationItem = {
 };
 
 export type IdentificationData = {
-  fornecimento: string; // Representa o código do CE quando agrupado
+  fornecimento: string;
   cidade: string;
   recebedor: string;
   dataEntrega: string;
@@ -50,12 +50,11 @@ export default function ParceriaIdentificationLabel({
   return (
     <div className={cn(
       "bg-white text-black flex flex-col items-center",
-      !hideControls && "min-h-screen p-4 overflow-auto w-full",
+      !hideControls && "w-full flex-1",
       hideControls && "page-break printable-area"
     )}>
-      {/* Controls - Non Printable */}
       {!hideControls && (
-        <div className="w-full max-w-4xl flex justify-between items-center mb-6 bg-muted p-4 rounded-lg border non-printable shadow-sm">
+        <div className="w-full max-w-4xl flex justify-between items-center mb-6 bg-muted p-4 rounded-lg border non-printable shadow-sm sticky top-0 z-10">
           <div className="flex items-center gap-4">
             {onClose && (
               <Button variant="outline" onClick={onClose}>
@@ -89,7 +88,6 @@ export default function ParceriaIdentificationLabel({
         </div>
       )}
 
-      {/* A4 Page Container */}
       <div className="printable-area bg-white border shadow-sm print:shadow-none print:border-none overflow-hidden flex flex-col font-sans" 
            style={{ 
              width: '210mm', 
@@ -99,7 +97,6 @@ export default function ParceriaIdentificationLabel({
              backgroundColor: 'white'
            }}>
         
-        {/* Header - City, Date & Line/Car */}
         <div className="flex justify-between items-start border-b-4 border-black pb-4 mb-6">
           <div className="flex-1">
             <h2 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">Cidade / Destino</h2>
@@ -121,15 +118,12 @@ export default function ParceriaIdentificationLabel({
           </div>
         </div>
 
-        {/* Content Section */}
         <div className="flex-grow space-y-6 overflow-hidden">
-          {/* Receiver */}
           <section>
             <h2 className="text-sm font-bold uppercase tracking-widest text-gray-500 mb-1 border-b border-gray-200 pb-1">Recebedor</h2>
             <p className="text-2xl font-bold leading-tight">{data.recebedor || 'N/A'}</p>
           </section>
 
-          {/* Items Table for Conference */}
           <section className="flex-grow overflow-hidden">
             <h2 className="text-sm font-bold uppercase tracking-widest text-gray-500 mb-2 border-b-2 border-black pb-1">Conferência de Itens Unificados por CE</h2>
             <div className="border-2 border-black rounded-lg overflow-hidden">
@@ -165,14 +159,12 @@ export default function ParceriaIdentificationLabel({
             </div>
           </section>
 
-          {/* Localidade */}
           <section>
              <h2 className="text-sm font-bold uppercase tracking-widest text-gray-500 mb-1 border-b border-gray-200 pb-1">Localidade de Separação</h2>
              <p className="text-2xl font-bold">{data.localidade || 'N/A'}</p>
           </section>
         </div>
 
-        {/* Footer - Barcode & CE */}
         <div className="mt-auto border-t-4 border-black pt-4 flex flex-col items-center space-y-2">
           <div className="bg-white p-1">
             <Barcode 

@@ -94,7 +94,6 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
 
       const headers = (json[0] || []).map(h => String(h).toUpperCase().trim());
       
-      // Localiza os índices das colunas dinamicamente para evitar o erro de "puxar 0"
       const findColIdx = (possibleNames: string[], defaultIdx: number) => {
         const found = headers.findIndex(h => possibleNames.includes(h));
         return found !== -1 ? found : defaultIdx;
@@ -120,10 +119,8 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
         const ceOriginal = String(row[idx.ce] || '').trim();
         const dataEntrega = formatExcelDate(row[idx.data]);
         
-        // Validação: Ignora linhas sem CE ou se o valor for apenas "0"
         if (!ceOriginal || ceOriginal === '0' || !dataEntrega) return;
 
-        // Chave de agrupamento: CE + Data (para separar o mesmo CE em datas diferentes)
         const groupKey = `${ceOriginal}|${dataEntrega}`;
 
         const material = String(row[idx.material] || '').trim();
@@ -483,14 +480,16 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
       )}
 
       {selectedItem && (
-        <div className="fixed inset-0 z-50 bg-background/95 flex items-center justify-center p-4">
-           <ParceriaIdentificationLabel 
-              data={selectedItem} 
-              onClose={() => setSelectedItem(null)} 
-              onNavigate={handleNavigate}
-              currentIndex={filteredData.findIndex(i => i.fornecimento === selectedItem.fornecimento && i.dataEntrega === selectedItem.dataEntrega)}
-              totalItems={filteredData.length}
-           />
+        <div className="fixed inset-0 z-50 bg-background/95 overflow-y-auto pt-4 pb-12" onClick={() => setSelectedItem(null)}>
+           <div className="min-h-full flex items-start justify-center p-4" onClick={(e) => e.stopPropagation()}>
+             <ParceriaIdentificationLabel 
+                data={selectedItem} 
+                onClose={() => setSelectedItem(null)} 
+                onNavigate={handleNavigate}
+                currentIndex={filteredData.findIndex(i => i.fornecimento === selectedItem.fornecimento && i.dataEntrega === selectedItem.dataEntrega)}
+                totalItems={filteredData.length}
+             />
+           </div>
         </div>
       )}
     </div>
