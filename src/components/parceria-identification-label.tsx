@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Button } from "./ui/button";
@@ -107,9 +108,14 @@ export default function ParceriaIdentificationLabel({
               <span>DATA ENTREGA: {data.dataEntrega || '-'}</span>
             </div>
           </div>
-          <div className="text-right ml-4">
-            <h2 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">Linha</h2>
-            <h1 className="text-6xl font-black">{data.linha || '-'}</h1>
+          <div className="text-right ml-4 max-w-[40%]">
+            <h2 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">Linha / Carro</h2>
+            <h1 className={cn(
+                "font-black break-words leading-none",
+                data.linha?.length > 10 ? "text-3xl" : "text-6xl"
+            )}>
+                {data.linha || '-'}
+            </h1>
           </div>
         </div>
 

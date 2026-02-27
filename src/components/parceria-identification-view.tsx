@@ -89,7 +89,8 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
         const qtd = Number(row[14] || 0);
         const dataEntrega = formatExcelDate(row[1]);
         
-        // Mapeamento: Coluna CE é o índice 82. Coluna T é o índice 19 (fallback)
+        // Coluna CE é o índice 82. Coluna T (Linha curta) é o índice 19.
+        // Priorizamos a coluna CE por conter a informação completa pedida pelo usuário.
         const carroInfo = String(row[82] || row[19] || '').trim();
 
         const newItem = {
@@ -101,7 +102,6 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
         if (groupedMap.has(fornecimento)) {
           const existing = groupedMap.get(fornecimento)!;
           existing.items.push(newItem);
-          // Garante que a informação do carro seja preenchida se encontrada em qualquer linha da remessa
           if (!existing.linha && carroInfo) {
             existing.linha = carroInfo;
           }
@@ -254,7 +254,7 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
               <div className="relative">
                 <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input 
-                  placeholder="Buscar remessa, cidade ou linha..." 
+                  placeholder="Buscar remessa, cidade ou carro..." 
                   className="pl-8 w-64" 
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -275,7 +275,7 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
                     <TableHead>Cidade</TableHead>
                     <TableHead className="text-center">Qtd Itens</TableHead>
                     <TableHead className="text-center">Total UDC</TableHead>
-                    <TableHead className="text-center">Carro (Coluna CE)</TableHead>
+                    <TableHead className="text-center">Linha (Coluna CE)</TableHead>
                     <TableHead className="text-right">Ação</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -289,7 +289,9 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
                       <TableCell className="font-bold">{item.cidade}</TableCell>
                       <TableCell className="text-center">{item.items.length}</TableCell>
                       <TableCell className="text-center font-bold text-primary">{totalQtd} UN</TableCell>
-                      <TableCell className="text-center font-black bg-muted/30">{item.linha || '-'}</TableCell>
+                      <TableCell className="text-center font-black bg-muted/30">
+                        {item.linha || '-'}
+                      </TableCell>
                       <TableCell className="text-right">
                         <Button size="sm" variant="outline" onClick={() => setSelectedItem(item)}>
                           <Printer className="mr-2 h-4 w-4" />
