@@ -305,7 +305,7 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
         <CardHeader>
           <CardTitle className="flex items-center gap-2 font-headline uppercase">
             <TableIcon className="text-accent h-6 w-6" />
-            Unificação Parceria (Col B e R)
+            UNIFICAÇÃO DE PARCERIA BRUTA
           </CardTitle>
         </CardHeader>
         <CardContent>
