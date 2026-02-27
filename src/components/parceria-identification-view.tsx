@@ -82,28 +82,59 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
       const worksheet = workbook.Sheets[sheetName];
       const json = xlsx.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
       
+      if (json.length < 2) {
+        toast({
+          title: "Arquivo vazio",
+          description: "O arquivo não contém dados para processar.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      const headers = (json[0] || []).map(h => String(h).toUpperCase().trim());
+      
+      // Localiza os índices das colunas dinamicamente para evitar o erro de "puxar 0"
+      const findColIdx = (possibleNames: string[], defaultIdx: number) => {
+        const found = headers.findIndex(h => possibleNames.includes(h));
+        return found !== -1 ? found : defaultIdx;
+      };
+
+      const idx = {
+        fornecimento: findColIdx(['FORNECIMENTO', 'DOC. TRANSPORTE', 'REMESSA'], 0),
+        data: findColIdx(['DATA PLANEJADA', 'DATA DE ENTREGA', 'DATA'], 1),
+        cidade: findColIdx(['CIDADE', 'DESTINO'], 10),
+        recebedor: findColIdx(['RECEBEDOR', 'NOME DO CLIENTE'], 11),
+        material: findColIdx(['MATERIAL', 'SKU'], 12),
+        denominacao: findColIdx(['DENOMINAÇÃO', 'DESCRIÇÃO'], 13),
+        qtd: findColIdx(['QTD', 'QUANTIDADE', 'QTD.FORN.'], 14),
+        carro: findColIdx(['CARRO', 'VEICULO', 'PLACA'], 17),
+        localidade: findColIdx(['LOCALIDADE', 'ESTOQUE'], 18),
+        linha: findColIdx(['LINHA', 'ROTA'], 19),
+        ce: findColIdx(['CE', 'CARREGAMENTO', 'NÚMERO CE'], 82)
+      };
+
       const groupedMap = new Map<string, IdentificationData>();
 
       json.slice(1).forEach(row => {
-        const fornecimento = String(row[0] || '').trim();
-        const ceOriginal = String(row[82] || '').trim(); // Coluna CE
-        const dataEntrega = formatExcelDate(row[1]); // Coluna B
+        const ceOriginal = String(row[idx.ce] || '').trim();
+        const dataEntrega = formatExcelDate(row[idx.data]);
         
-        // Se não tiver CE ou Data, ignora
-        if (!ceOriginal || !dataEntrega || ceOriginal.toUpperCase() === 'CE') return;
+        // Validação: Ignora linhas sem CE ou se o valor for apenas "0"
+        if (!ceOriginal || ceOriginal === '0' || !dataEntrega) return;
 
         // Chave de agrupamento: CE + Data (para separar o mesmo CE em datas diferentes)
         const groupKey = `${ceOriginal}|${dataEntrega}`;
 
-        const material = String(row[12] || '').trim();
-        const denominacao = String(row[13] || '').trim();
-        const qtd = Number(row[14] || 0);
+        const material = String(row[idx.material] || '').trim();
+        const denominacao = String(row[idx.denominacao] || '').trim();
+        const qtd = Number(row[idx.qtd] || 0);
         
-        const cidade = String(row[10] || '').trim();
-        const recebedor = String(row[11] || '').trim();
-        const carro = String(row[17] || '').trim();
-        const linha = String(row[19] || '').trim();
-        const localidade = String(row[18] || '').trim();
+        const cidade = String(row[idx.cidade] || '').trim();
+        const recebedor = String(row[idx.recebedor] || '').trim();
+        const carro = String(row[idx.carro] || '').trim();
+        const linha = String(row[idx.linha] || '').trim();
+        const localidade = String(row[idx.localidade] || '').trim();
 
         const newItem = {
           material,
@@ -114,7 +145,6 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
         if (groupedMap.has(groupKey)) {
           const existing = groupedMap.get(groupKey)!;
           
-          // Verifica se o SKU já existe para somar a quantidade ou adicionar novo
           const existingItem = existing.items.find(i => i.material === material);
           if (existingItem) {
             existingItem.qtd += qtd;
@@ -122,14 +152,13 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
             existing.items.push(newItem);
           }
           
-          // Mantém as informações de cabeçalho (se estiverem vazias)
           if (!existing.carro && carro) existing.carro = carro;
           if (!existing.linha && linha) existing.linha = linha;
           if (!existing.cidade && cidade) existing.cidade = cidade;
           if (!existing.recebedor && recebedor) existing.recebedor = recebedor;
         } else {
           groupedMap.set(groupKey, {
-            fornecimento: ceOriginal, // Usamos o CE como identificador principal do grupo
+            fornecimento: ceOriginal,
             cidade,
             recebedor,
             dataEntrega,
@@ -143,11 +172,19 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
 
       const extractedData = Array.from(groupedMap.values());
 
-      setData(extractedData);
-      toast({
-        title: "Sucesso!",
-        description: `${extractedData.length} grupos de CE consolidados.`,
-      });
+      if (extractedData.length === 0) {
+        toast({
+          title: "Nenhum CE encontrado",
+          description: "Verifique se a coluna 'CE' possui valores válidos.",
+          variant: "destructive",
+        });
+      } else {
+        setData(extractedData);
+        toast({
+          title: "Sucesso!",
+          description: `${extractedData.length} identificações de CE/Data geradas.`,
+        });
+      }
     } catch (error) {
       console.error(error);
       toast({
@@ -333,7 +370,7 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
         <CardHeader>
           <CardTitle className="flex items-center gap-2 font-headline uppercase">
             <TableIcon className="text-accent h-6 w-6" />
-            Identificação por CE (Coluna CE)
+            Identificação por CE (Agrupado por Data)
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -410,7 +447,7 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
               <Table>
                 <TableHeader className="sticky top-0 bg-card z-10 shadow-sm">
                   <TableRow>
-                    <TableHead>CE (Agrupador)</TableHead>
+                    <TableHead>CE (Identificação)</TableHead>
                     <TableHead>Data Entrega</TableHead>
                     <TableHead>Cidade</TableHead>
                     <TableHead className="text-center">Total UN</TableHead>
