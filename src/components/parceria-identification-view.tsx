@@ -63,38 +63,33 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
       const worksheet = workbook.Sheets[sheetName];
       const json = xlsx.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
       
-      // Agrupamento por Fornecimento
       const groupedMap = new Map<string, IdentificationData>();
 
       json.slice(1).forEach(row => {
         const fornecimento = String(row[0] || '').trim();
         const cidade = String(row[10] || '').trim();
         
-        // Filtra linhas inválidas
         if (!fornecimento || !cidade || fornecimento.toUpperCase() === 'FORNECIMENTO') return;
 
         const material = String(row[12] || '').trim();
         const denominacao = String(row[13] || '').trim();
         const qtd = Number(row[14] || 0);
 
+        const newItem = {
+          material,
+          denominacao,
+          qtd
+        };
+
         if (groupedMap.has(fornecimento)) {
           const existing = groupedMap.get(fornecimento)!;
-          // Soma a quantidade
-          existing.qtd = Number(existing.qtd) + qtd;
-          
-          // Se o material for diferente, marca como diversos
-          if (existing.material !== material) {
-            existing.material = "DIVERSOS";
-            existing.denominacao = "ITENS DIVERSOS DA REMESSA";
-          }
+          existing.items.push(newItem);
         } else {
           groupedMap.set(fornecimento, {
             fornecimento,
             cidade,
             recebedor: String(row[11] || '').trim(),
-            material,
-            denominacao,
-            qtd,
+            items: [newItem],
             localidade: String(row[18] || '').trim(),
             linha: String(row[19] || '').trim(),
           });
@@ -106,7 +101,7 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
       setData(extractedData);
       toast({
         title: "Sucesso!",
-        description: `${extractedData.length} remessas consolidadas da aba VL06O.`,
+        description: `${extractedData.length} remessas consolidadas com detalhes de SKUs.`,
       });
     } catch (error) {
       console.error(error);
@@ -253,19 +248,21 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
                   <TableRow>
                     <TableHead>Fornecimento</TableHead>
                     <TableHead>Cidade</TableHead>
-                    <TableHead>Produto</TableHead>
+                    <TableHead>Nº Itens</TableHead>
                     <TableHead>Total UDC</TableHead>
                     <TableHead>Linha</TableHead>
                     <TableHead className="text-right">Ação</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredData.map((item, idx) => (
+                  {filteredData.map((item, idx) => {
+                    const totalQtd = item.items.reduce((acc, i) => acc + i.qtd, 0);
+                    return (
                     <TableRow key={idx}>
                       <TableCell className="font-mono">{item.fornecimento}</TableCell>
                       <TableCell className="font-bold">{item.cidade}</TableCell>
-                      <TableCell className="truncate max-w-[200px]">{item.denominacao}</TableCell>
-                      <TableCell className="text-center font-bold">{item.qtd} UN</TableCell>
+                      <TableCell className="text-center">{item.items.length}</TableCell>
+                      <TableCell className="text-center font-bold">{totalQtd} UN</TableCell>
                       <TableCell className="text-center font-black">{item.linha}</TableCell>
                       <TableCell className="text-right">
                         <Button size="sm" variant="outline" onClick={() => setSelectedItem(item)}>
@@ -274,7 +271,7 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
                         </Button>
                       </TableCell>
                     </TableRow>
-                  ))}
+                  )})}
                 </TableBody>
               </Table>
             </ScrollArea>
