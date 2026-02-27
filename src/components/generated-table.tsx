@@ -146,7 +146,7 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
   const handleExport = () => {
     const header = [
       "REMESSA", "DATA", "BR", "CIDADE", "CLIENTE",
-      "ORDEM", "QTD ETIQUETA", "Nº CAIXAS", "PARCERIA", "NOTA FISCAL"
+      "ORDEM", "QTD ETIQUETA", "Nº CAIXAS", "PARCERIA", "LINHA", "NOTA FISCAL"
     ];
 
     const createSheetBody = (sheetData: DataRow[]) => sheetData.map(row => ({
@@ -159,6 +159,7 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
       "QTD ETIQUETA": row.qtdEtiqueta,
       "Nº CAIXAS": row.nCaixas,
       "PARCERIA": (row.parceria !== 'Não' && row.parceria !== '') ? row.parceria : '',
+      "LINHA": row.linha || '',
       "NOTA FISCAL": row.notaFiscal || ''
     }));
 
@@ -283,6 +284,7 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
                   <TableHead><HeaderCell column="qtdEtiqueta" label="QTD ETIQUETA"/></TableHead>
                   <TableHead><HeaderCell column="nCaixas" label="Nº CAIXAS"/></TableHead>
                   {hasNotaFiscal && <TableHead><HeaderCell column="notaFiscal" label="NOTA FISCAL"/></TableHead>}
+                  <TableHead><HeaderCell column="linha" label="LINHA"/></TableHead>
                   <TableHead><HeaderCell column="parceria" label="PARCERIA"/></TableHead>
                   <TableHead className="non-printable">Ações</TableHead>
                 </TableRow>
@@ -311,6 +313,7 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
                       </TableCell>
                       <TableCell className="text-center">{row.nCaixas}</TableCell>
                       {hasNotaFiscal && <TableCell>{row.notaFiscal || ''}</TableCell>}
+                      <TableCell>{row.linha || ''}</TableCell>
                       <TableCell>
                          <span className={cn(
                             "px-2 py-1 rounded-full text-xs font-medium",
@@ -332,7 +335,7 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
                   )})
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={11} className="text-center h-24 text-muted-foreground">
+                    <TableCell colSpan={12} className="text-center h-24 text-muted-foreground">
                       Nenhum resultado encontrado.
                     </TableCell>
                   </TableRow>

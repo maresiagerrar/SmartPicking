@@ -23,7 +23,6 @@ export default function LabelPreview({ data, onClose, onNavigate, onPrint }: Lab
   const handlePrint = () => {
     onPrint(data);
     window.print();
-    // Atraso para garantir que a impressão foi enviada antes de navegar
     setTimeout(() => {
         onNavigate('next');
     }, 100); 
@@ -100,7 +99,10 @@ export default function LabelPreview({ data, onClose, onNavigate, onPrint }: Lab
             <div className="flex-grow flex flex-col">
               <div className="flex justify-between items-start">
                   <span className="text-2xl font-bold">{data.data}</span>
-                  <div className="flex items-baseline gap-2 text-right">
+                  <div className="flex flex-col items-end">
+                      {data.linha && (
+                        <span className="text-3xl font-black bg-black text-white px-2 py-0.5 rounded mb-1">{data.linha}</span>
+                      )}
                       <div className="flex items-baseline gap-1 justify-end">
                           <span className="text-sm font-semibold">ORDEM:</span>
                           <span className="text-5xl font-bold">{getOrderNumber()}</span>

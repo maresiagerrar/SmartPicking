@@ -9,6 +9,7 @@ export type DataRow = {
   qtdEtiqueta: number | string;
   nCaixas: string;
   parceria: string;
+  linha?: string;
   notaFiscal?: string;
 };
 

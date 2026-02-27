@@ -30,6 +30,7 @@ const DataRowSchema = z.object({
   qtdEtiqueta: z.union([z.number(), z.string()]),
   nCaixas: z.string(),
   parceria: z.string(),
+  linha: z.string().optional(),
   notaFiscal: z.string().optional(),
 });
 
@@ -39,8 +40,8 @@ const ProcessFilesOutputSchema = z.object({
 });
 export type ProcessFilesOutput = z.infer<typeof ProcessFilesOutputSchema>;
 
-type TxtData = Omit<DataRow, 'cidade' | 'cliente' | 'nCaixas' | 'parceria' | 'notaFiscal'> & { qtdEtiqueta: number };
-type ExcelData = Pick<DataRow, 'remessa' | 'cidade' | 'cliente'> & { sku: string };
+type TxtData = Omit<DataRow, 'cidade' | 'cliente' | 'nCaixas' | 'parceria' | 'linha' | 'notaFiscal'> & { qtdEtiqueta: number };
+type ExcelData = Pick<DataRow, 'remessa' | 'cidade' | 'cliente'> & { sku: string; linha?: string };
 
 /**
  * Normaliza o número da remessa removendo zeros à esquerda e espaços.
@@ -112,6 +113,7 @@ function parseExcelFile(excelContent: string): ExcelData[] {
           const skuM = row[12];
           const cidadeColumn = row[10];
           const clienteColumn = row[11];
+          const linhaColumn = row[19]; // Coluna T
     
           if (remessa !== null && (cidadeColumn || clienteColumn)) {
             const sku = skuM || skuI || skuH; 
@@ -120,6 +122,7 @@ function parseExcelFile(excelContent: string): ExcelData[] {
               sku: sku ? String(sku).trim() : 'N/A',
               cidade: cidadeColumn ? String(cidadeColumn) : 'N/A',
               cliente: clienteColumn ? String(clienteColumn) : 'N/A',
+              linha: linhaColumn ? String(linhaColumn).trim() : undefined,
             });
           }
         });
@@ -173,7 +176,7 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
     const excelDataRaw = parseExcelFile(input.excelContent);
     const shipTrackerMap = input.shipTrackerContent ? parseShipTracker(input.shipTrackerContent) : new Map<string, string>();
     
-    // Consolidação de remessas do TXT: Agrupa por número de remessa normalizado e soma as quantidades
+    // Consolidação de remessas do TXT
     const aggregatedTxtMap = new Map<string, TxtData>();
     txtDataRaw.forEach(item => {
         const normRem = normalizeRemessa(item.remessa);
@@ -181,7 +184,6 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
             const existing = aggregatedTxtMap.get(normRem)!;
             existing.qtdEtiqueta += item.qtdEtiqueta;
         } else {
-            // Mantemos a remessa original para exibição, mas usamos a normalizada como chave
             aggregatedTxtMap.set(normRem, { ...item });
         }
     });
@@ -226,10 +228,10 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
       const totalEtiquetasRemessa = qtdEtiquetasBase + parceriaItems.length;
       const totalEtiquetasRemessaString = String(totalEtiquetasRemessa).padStart(2, '0');
       const notaFiscal = shipTrackerMap.get(normRem);
+      const linhaInfo = excelItems.length > 0 ? excelItems[0].linha : undefined;
       
       let currentCaixaCounter = 1;
 
-      // Labels da remessa base
       for (let i = 0; i < qtdEtiquetasBase; i++) {
         const firstExcelItem = excelItems.length > 0 ? excelItems[0] : null;
         let cliente = firstExcelItem?.cliente || 'N/A';
@@ -244,11 +246,11 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
             qtdEtiqueta: totalEtiquetasRemessa,
             nCaixas: `${String(currentCaixaCounter++).padStart(2, '0')}/${totalEtiquetasRemessaString}`,
             parceria: parceriaItems.length > 0 ? parceriaText : 'Não',
+            linha: linhaInfo,
             notaFiscal: notaFiscal,
         });
       }
 
-      // Labels de parceria
       parceriaItems.forEach((parceriaItem) => {
           let cliente = parceriaItem.cliente;
           if (clienteMapping[txtItem.br] && cliente.toUpperCase() === 'SOUZA CRUZ LTDA.') {
@@ -262,6 +264,7 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
               qtdEtiqueta: totalEtiquetasRemessa,
               nCaixas: `${String(currentCaixaCounter++).padStart(2, '0')}/${totalEtiquetasRemessaString}`,
               parceria: parceriaText,
+              linha: parceriaItem.linha,
               notaFiscal: notaFiscal,
           });
       });
