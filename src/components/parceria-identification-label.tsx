@@ -20,6 +20,7 @@ export type IdentificationData = {
   items: IdentificationItem[];
   localidade: string;
   linha: string;
+  carro: string;
 };
 
 interface ParceriaIdentificationLabelProps {
@@ -98,7 +99,7 @@ export default function ParceriaIdentificationLabel({
              backgroundColor: 'white'
            }}>
         
-        {/* Header - City, Date & Line */}
+        {/* Header - City, Date & Line/Car */}
         <div className="flex justify-between items-start border-b-4 border-black pb-4 mb-6">
           <div className="flex-1">
             <h2 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">Cidade / Destino</h2>
@@ -108,14 +109,15 @@ export default function ParceriaIdentificationLabel({
               <span>DATA ENTREGA: {data.dataEntrega || '-'}</span>
             </div>
           </div>
-          <div className="text-right ml-4 max-w-[40%]">
-            <h2 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">Linha / Carro</h2>
-            <h1 className={cn(
-                "font-black break-words leading-none",
-                data.linha?.length > 10 ? "text-3xl" : "text-6xl"
-            )}>
-                {data.linha || '-'}
-            </h1>
+          <div className="text-right ml-4 max-w-[45%] flex flex-col gap-4">
+            <div>
+              <h2 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-0.5">Carro (R)</h2>
+              <h1 className="text-4xl font-black leading-none">{data.carro || '-'}</h1>
+            </div>
+            <div>
+              <h2 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-0.5">Linha (T)</h2>
+              <h1 className="text-4xl font-black leading-none">{data.linha || '-'}</h1>
+            </div>
           </div>
         </div>
 

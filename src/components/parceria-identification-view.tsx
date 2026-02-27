@@ -92,7 +92,6 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
         // Coluna R (Carro) é índice 17. Coluna T (Linha) é índice 19.
         const carro = String(row[17] || '').trim();
         const linha = String(row[19] || '').trim();
-        const combinedCarroLinha = carro && linha ? `${carro} - ${linha}` : (carro || linha);
 
         const newItem = {
           material,
@@ -103,10 +102,9 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
         if (groupedMap.has(fornecimento)) {
           const existing = groupedMap.get(fornecimento)!;
           existing.items.push(newItem);
-          // Atualiza a informação de linha se ela for encontrada em linhas subsequentes
-          if (!existing.linha && combinedCarroLinha) {
-            existing.linha = combinedCarroLinha;
-          }
+          // Atualiza a informação de linha/carro se ela for encontrada em linhas subsequentes
+          if (!existing.carro && carro) existing.carro = carro;
+          if (!existing.linha && linha) existing.linha = linha;
         } else {
           groupedMap.set(fornecimento, {
             fornecimento,
@@ -115,7 +113,8 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
             dataEntrega,
             items: [newItem],
             localidade: String(row[18] || '').trim(),
-            linha: combinedCarroLinha,
+            carro: carro,
+            linha: linha,
           });
         }
       });
@@ -146,6 +145,7 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
       item.cidade.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.recebedor.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.dataEntrega.includes(searchTerm) ||
+      item.carro.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.linha.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [data, searchTerm]);
@@ -277,7 +277,8 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
                     <TableHead>Cidade</TableHead>
                     <TableHead className="text-center">Qtd Itens</TableHead>
                     <TableHead className="text-center">Total UDC</TableHead>
-                    <TableHead className="text-center">Carro / Linha (R / T)</TableHead>
+                    <TableHead className="text-center">Carro (R)</TableHead>
+                    <TableHead className="text-center">Linha (T)</TableHead>
                     <TableHead className="text-right">Ação</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -291,9 +292,8 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
                       <TableCell className="font-bold">{item.cidade}</TableCell>
                       <TableCell className="text-center">{item.items.length}</TableCell>
                       <TableCell className="text-center font-bold text-primary">{totalQtd} UN</TableCell>
-                      <TableCell className="text-center font-black bg-muted/30">
-                        {item.linha || '-'}
-                      </TableCell>
+                      <TableCell className="text-center font-bold">{item.carro || '-'}</TableCell>
+                      <TableCell className="text-center font-bold">{item.linha || '-'}</TableCell>
                       <TableCell className="text-right">
                         <Button size="sm" variant="outline" onClick={() => setSelectedItem(item)}>
                           <Printer className="mr-2 h-4 w-4" />
