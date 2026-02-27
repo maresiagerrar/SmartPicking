@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Button } from "./ui/button";
@@ -51,7 +50,7 @@ export default function ParceriaIdentificationLabel({
     <div className={cn(
       "bg-white text-black flex flex-col items-center",
       !hideControls && "min-h-screen p-4",
-      hideControls && "page-break"
+      hideControls && "page-break printable-area"
     )}>
       {/* Controls - Non Printable */}
       {!hideControls && (
@@ -90,7 +89,7 @@ export default function ParceriaIdentificationLabel({
       )}
 
       {/* A4 Page Container */}
-      <div className="printable-area bg-white border shadow-sm print:shadow-none overflow-hidden flex flex-col font-sans" 
+      <div className="printable-area bg-white border shadow-sm print:shadow-none print:border-none overflow-hidden flex flex-col font-sans" 
            style={{ 
              width: '210mm', 
              height: '297mm', 
@@ -193,7 +192,7 @@ export default function ParceriaIdentificationLabel({
       <style jsx global>{`
         @media print {
           .printable-area {
-            position: static !important;
+            visibility: visible !important;
             display: block !important;
             width: 210mm !important;
             height: 297mm !important;
@@ -201,14 +200,6 @@ export default function ParceriaIdentificationLabel({
             padding: 15mm !important;
             border: none !important;
             box-shadow: none !important;
-          }
-          @page {
-            size: A4;
-            margin: 0;
-          }
-          body {
-            margin: 0;
-            padding: 0;
             background: white !important;
           }
         }

@@ -71,39 +71,44 @@
 }
 
 @media print {
-  body > *:not(.printable-area) {
-    display: none !important;
+  /* Oculta tudo por padrão */
+  body * {
+    visibility: hidden;
   }
-  html, body {
-    margin: 0 !important;
-    padding: 0 !important;
-    height: 100%;
-    width: 100%;
-    overflow: visible !important;
+  
+  /* Exibe a área imprimível e seus filhos */
+  .printable-area, .printable-area * {
+    visibility: visible;
   }
-  main {
-    display: block !important;
-    padding: 0 !important;
-    margin: 0 !important;
-  }
+  
+  /* Posiciona a área imprimível no topo da página */
   .printable-area {
-    display: block !important;
-    visibility: visible !important;
-    position: static !important;
+    position: absolute;
+    left: 0;
+    top: 0;
     width: 100% !important;
     height: auto !important;
-    padding: 0 !important;
     margin: 0 !important;
+    padding: 0 !important;
+    display: block !important;
+    background: white !important;
     overflow: visible !important;
+  }
+
+  /* Força a ocultação de elementos não imprimíveis */
+  .non-printable, 
+  [data-radix-portal], 
+  header, 
+  footer,
+  .toaster,
+  .toast {
+    display: none !important;
+    visibility: hidden !important;
   }
   
   .page-break {
     page-break-after: always;
     break-after: page;
-  }
-
-  .non-printable {
-    display: none !important;
   }
 
   @page {
