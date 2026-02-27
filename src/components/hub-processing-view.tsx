@@ -12,6 +12,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { ChevronLeft, Ticket, Search, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import ParceriaIdentificationView from "./parceria-identification-view";
 
 interface HubProcessingViewProps {
   hub: 'campinas' | 'contagem';
@@ -175,13 +176,7 @@ export default function HubProcessingView({ hub }: HubProcessingViewProps) {
           )}
         </>
       ) : (
-        <Card className="min-h-[400px] flex items-center justify-center border-dashed">
-          <CardContent className="text-center">
-            <Search className="w-16 h-16 mx-auto text-muted-foreground mb-4 opacity-20" />
-            <h2 className="text-2xl font-bold text-muted-foreground opacity-50 uppercase">Identificação Parceria Bruta</h2>
-            <p className="text-muted-foreground mt-2">Novas funcionalidades serão adicionadas aqui em breve.</p>
-          </CardContent>
-        </Card>
+        <ParceriaIdentificationView hub={hub} />
       )}
     </div>
   );
