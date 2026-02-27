@@ -40,7 +40,7 @@ const ProcessFilesOutputSchema = z.object({
 });
 export type ProcessFilesOutput = z.infer<typeof ProcessFilesOutputSchema>;
 
-type TxtData = Omit<DataRow, 'cidade' | 'cliente' | 'nCaixas' | 'parceria' | 'linha' | 'notaFiscal'> & { qtdEtiqueta: number };
+type TxtData = Omit<DataRow, 'cidade' | 'cliente' | 'nCaixas' | 'parceria' | 'notaFiscal'> & { qtdEtiqueta: number };
 type ExcelData = Pick<DataRow, 'remessa' | 'cidade' | 'cliente'> & { sku: string; linha?: string };
 
 /**
@@ -59,6 +59,7 @@ function parseTxtFile(txtContent: string): TxtData[] {
     let currentData = 'N/A';
     let currentBr = 'N/A';
     let currentOrdem = 'N/A';
+    let currentLinha: string | undefined = undefined;
 
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
@@ -73,8 +74,18 @@ function parseTxtFile(txtContent: string): TxtData[] {
         const brMatch = line.match(/BR\d+/i);
         if (brMatch) currentBr = brMatch[0].toUpperCase();
 
-        const ordemMatch = line.match(/Linha\s*[:\.]?\s*(\w+)?\s*(\d+)/i);
-        if (ordemMatch) currentOrdem = ordemMatch[2];
+        // Regex atualizado para capturar "Linha : ON1 1 P"
+        // Grupo 1: (\w+) -> ON1
+        // Grupo 2: (\d+) -> 1
+        const ordemMatch = line.match(/Linha\s*[:\.]?\s*(\w+)?\s+(\d+)/i);
+        if (ordemMatch) {
+            if (ordemMatch[1] && ordemMatch[2]) {
+                currentLinha = ordemMatch[1];
+                currentOrdem = ordemMatch[2];
+            } else if (ordemMatch[1]) {
+                currentOrdem = ordemMatch[1];
+            }
+        }
 
         if (line.toUpperCase().startsWith('QTD CX')) {
             let qtd = 0;
@@ -90,7 +101,8 @@ function parseTxtFile(txtContent: string): TxtData[] {
                     data: currentData,
                     br: currentBr,
                     ordem: currentOrdem,
-                    qtdEtiqueta: qtd
+                    qtdEtiqueta: qtd,
+                    linha: currentLinha
                 });
             }
         }
@@ -228,7 +240,9 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
       const totalEtiquetasRemessa = qtdEtiquetasBase + parceriaItems.length;
       const totalEtiquetasRemessaString = String(totalEtiquetasRemessa).padStart(2, '0');
       const notaFiscal = shipTrackerMap.get(normRem);
-      const linhaInfo = excelItems.length > 0 ? excelItems[0].linha : undefined;
+      
+      // Prioriza a linha do TXT, se não houver usa a do Excel
+      const linhaInfo = txtItem.linha || (excelItems.length > 0 ? excelItems[0].linha : undefined);
       
       let currentCaixaCounter = 1;
 
@@ -264,7 +278,7 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
               qtdEtiqueta: totalEtiquetasRemessa,
               nCaixas: `${String(currentCaixaCounter++).padStart(2, '0')}/${totalEtiquetasRemessaString}`,
               parceria: parceriaText,
-              linha: parceriaItem.linha,
+              linha: parceriaItem.linha || linhaInfo,
               notaFiscal: notaFiscal,
           });
       });
