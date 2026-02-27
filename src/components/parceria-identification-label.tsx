@@ -1,9 +1,9 @@
-
 "use client";
 
 import { Button } from "./ui/button";
 import { Printer, X, ChevronLeft, ChevronRight } from "lucide-react";
 import Barcode from 'react-barcode';
+import { cn } from "@/lib/utils";
 
 export type IdentificationData = {
   fornecimento: string;
@@ -18,10 +18,11 @@ export type IdentificationData = {
 
 interface ParceriaIdentificationLabelProps {
   data: IdentificationData;
-  onClose: () => void;
+  onClose?: () => void;
   onNavigate?: (direction: 'next' | 'prev') => void;
   currentIndex?: number;
   totalItems?: number;
+  hideControls?: boolean;
 }
 
 export default function ParceriaIdentificationLabel({ 
@@ -29,7 +30,8 @@ export default function ParceriaIdentificationLabel({
   onClose, 
   onNavigate,
   currentIndex,
-  totalItems
+  totalItems,
+  hideControls = false
 }: ParceriaIdentificationLabelProps) {
   
   const handlePrint = () => {
@@ -37,46 +39,55 @@ export default function ParceriaIdentificationLabel({
   };
 
   return (
-    <div className="bg-white text-black min-h-screen flex flex-col items-center p-4">
+    <div className={cn(
+      "bg-white text-black flex flex-col items-center",
+      !hideControls && "min-h-screen p-4",
+      hideControls && "page-break"
+    )}>
       {/* Controls - Non Printable */}
-      <div className="w-full max-w-4xl flex justify-between items-center mb-6 bg-muted p-4 rounded-lg border non-printable shadow-sm">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" onClick={onClose}>
-            <X className="mr-2 h-4 w-4" />
-            Fechar Visualização
-          </Button>
-          {currentIndex !== undefined && totalItems !== undefined && (
-            <span className="text-sm font-medium">
-              Item {currentIndex + 1} de {totalItems}
-            </span>
-          )}
-        </div>
-        
-        <div className="flex items-center gap-2">
-          {onNavigate && (
-            <>
-              <Button variant="outline" size="icon" onClick={() => onNavigate('prev')}>
-                <ChevronLeft className="h-4 w-4" />
+      {!hideControls && (
+        <div className="w-full max-w-4xl flex justify-between items-center mb-6 bg-muted p-4 rounded-lg border non-printable shadow-sm">
+          <div className="flex items-center gap-4">
+            {onClose && (
+              <Button variant="outline" onClick={onClose}>
+                <X className="mr-2 h-4 w-4" />
+                Fechar Visualização
               </Button>
-              <Button variant="outline" size="icon" onClick={() => onNavigate('next')}>
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </>
-          )}
-          <Button onClick={handlePrint} style={{ backgroundColor: '#D40511' }} className="ml-4">
-            <Printer className="mr-2 h-4 w-4" />
-            Imprimir A4
-          </Button>
+            )}
+            {currentIndex !== undefined && totalItems !== undefined && (
+              <span className="text-sm font-medium">
+                Item {currentIndex + 1} de {totalItems}
+              </span>
+            )}
+          </div>
+          
+          <div className="flex items-center gap-2">
+            {onNavigate && (
+              <>
+                <Button variant="outline" size="icon" onClick={() => onNavigate('prev')}>
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="icon" onClick={() => onNavigate('next')}>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </>
+            )}
+            <Button onClick={handlePrint} style={{ backgroundColor: '#D40511' }} className="ml-4">
+              <Printer className="mr-2 h-4 w-4" />
+              Imprimir A4
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* A4 Page Container */}
-      <div className="printable-area bg-white border shadow-2xl overflow-hidden flex flex-col font-sans" 
+      <div className="printable-area bg-white border shadow-sm print:shadow-none overflow-hidden flex flex-col font-sans" 
            style={{ 
              width: '210mm', 
              height: '297mm', 
              padding: '20mm',
-             boxSizing: 'border-box'
+             boxSizing: 'border-box',
+             backgroundColor: 'white'
            }}>
         
         {/* Header - City & Line */}
@@ -151,16 +162,14 @@ export default function ParceriaIdentificationLabel({
       <style jsx global>{`
         @media print {
           .printable-area {
-            position: absolute !important;
-            left: 0 !important;
-            top: 0 !important;
-            margin: 0 !important;
-            padding: 20mm !important;
+            position: static !important;
+            display: block !important;
             width: 210mm !important;
             height: 297mm !important;
+            margin: 0 !important;
+            padding: 20mm !important;
             border: none !important;
             box-shadow: none !important;
-            display: block !important;
           }
           @page {
             size: A4;
@@ -168,6 +177,7 @@ export default function ParceriaIdentificationLabel({
           }
           body {
             margin: 0;
+            padding: 0;
           }
         }
       `}</style>

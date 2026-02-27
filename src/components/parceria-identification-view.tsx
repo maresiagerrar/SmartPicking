@@ -1,11 +1,10 @@
-
 "use client";
 
 import { useState, useRef, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { FileSpreadsheet, CheckCircle2, Loader2, Printer, Search, X, Table as TableIcon } from 'lucide-react';
+import { FileSpreadsheet, CheckCircle2, Loader2, Printer, Search, X, Table as TableIcon, FileDown } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from "@/hooks/use-toast";
@@ -23,6 +22,7 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedItem, setSelectedItem] = useState<IdentificationData | null>(null);
+  const [isBulkPrinting, setIsBulkPrinting] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -63,9 +63,8 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
       const worksheet = workbook.Sheets[sheetName];
       const json = xlsx.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
       
-      // Mapeamento baseado nas colunas da imagem (A=0, K=10, L=11, M=12, N=13, O=14, S=18, T=19)
       const extractedData: IdentificationData[] = json.slice(1)
-        .filter(row => row[0] && row[10]) // Filtra linhas vazias
+        .filter(row => row[0] && row[10])
         .map(row => ({
           fornecimento: String(row[0] || '').trim(),
           cidade: String(row[10] || '').trim(),
@@ -115,6 +114,30 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
     setSelectedItem(filteredData[nextIndex]);
   };
 
+  const handleBulkPrint = () => {
+    if (filteredData.length === 0) return;
+    setIsBulkPrinting(true);
+    // Pequeno atraso para garantir renderização antes de abrir o diálogo de impressão
+    setTimeout(() => {
+      window.print();
+      setIsBulkPrinting(false);
+    }, 500);
+  };
+
+  if (isBulkPrinting) {
+    return (
+      <div className="printable-area">
+        {filteredData.map((item, idx) => (
+          <ParceriaIdentificationLabel 
+            key={idx}
+            data={item} 
+            hideControls={true}
+          />
+        ))}
+      </div>
+    );
+  }
+
   if (selectedItem) {
     return (
       <ParceriaIdentificationLabel 
@@ -129,7 +152,7 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
 
   return (
     <div className="space-y-6">
-      <Card className="shadow-lg border-2 border-accent/20">
+      <Card className="shadow-lg border-2 border-accent/20 non-printable">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 font-headline uppercase">
             <TableIcon className="text-accent h-6 w-6" />
@@ -175,10 +198,14 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
       </Card>
 
       {data.length > 0 && (
-        <Card className="shadow-lg animate-fade-in">
+        <Card className="shadow-lg animate-fade-in non-printable">
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-xl font-headline">Resultados extraídos</CardTitle>
+            <CardTitle className="text-xl font-headline">Resultados extraídos ({filteredData.length})</CardTitle>
             <div className="flex items-center gap-2">
+              <Button onClick={handleBulkPrint} className="bg-green-700 hover:bg-green-800">
+                <FileDown className="mr-2 h-4 w-4" />
+                Gerar PDF (Todos)
+              </Button>
               <div className="relative">
                 <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input 
@@ -215,7 +242,7 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
                       <TableCell className="text-right">
                         <Button size="sm" variant="outline" onClick={() => setSelectedItem(item)}>
                           <Printer className="mr-2 h-4 w-4" />
-                          Gerar A4
+                          Visualizar
                         </Button>
                       </TableCell>
                     </TableRow>
