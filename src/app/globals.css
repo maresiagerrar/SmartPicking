@@ -30,79 +30,35 @@
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
   }
-  .dark {
-    --background: 222 47% 11%;
-    --foreground: 210 40% 98%;
-    --card: 222 47% 11%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222 47% 11%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 356 95% 42%;
-    --primary-foreground: 222 47% 98%;
-    --secondary: 217 32% 17%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217 32% 17%;
-    --muted-foreground: 215 20% 65%;
-    --accent: 240 60% 60%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 356 95% 42%;
-    --destructive-foreground: 0 85.7% 97.3%;
-    --border: 217 32% 17%;
-    --input: 217 32% 17%;
-    --ring: 356 95% 42%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
-  }
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
-  header {
-    background: linear-gradient(90deg, #FC0 -0.13%, #FC0 29.87%, #FFDE59 72.87%, #FFF0B2 99.87%);
-  }
+  * { @apply border-border; }
+  body { @apply bg-background text-foreground; }
+  header { background: linear-gradient(90deg, #FC0 -0.13%, #FC0 29.87%, #FFDE59 72.87%, #FFF0B2 99.87%); }
 }
 
 @media print {
-  /* Oculta tudo por padrão */
-  body * {
-    visibility: hidden;
-  }
+  body * { visibility: hidden; }
+  .printable-area, .printable-area * { visibility: visible; }
   
-  /* Exibe a área imprimível e seus filhos */
-  .printable-area, .printable-area * {
-    visibility: visible;
-  }
-  
-  /* Configuração para multi-página */
   .printable-area {
-    position: relative !important; /* IMPORTANTE: Não usar absolute para multi-página */
-    display: block !important;
-    width: 100% !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 210mm !important;
     margin: 0 !important;
     padding: 0 !important;
     background: white !important;
     overflow: visible !important;
   }
 
-  /* Força a ocultação de elementos não imprimíveis */
   .non-printable, 
   [data-radix-portal], 
   header, 
   footer,
-  .toaster,
-  .toast,
-  button,
-  .dialog-close {
+  button {
     display: none !important;
-    visibility: hidden !important;
   }
   
   .page-break {
@@ -112,7 +68,7 @@
   }
 
   @page {
-    size: auto; /* Mantém o tamanho configurado no conteúdo ou A4 */
+    size: A4;
     margin: 0;
   }
 }

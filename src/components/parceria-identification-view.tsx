@@ -1,18 +1,18 @@
-
 "use client";
 
 import { useState, useRef, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { FileSpreadsheet, CheckCircle2, Loader2, Printer, Search, X, Table as TableIcon, FileDown, Download } from 'lucide-react';
+import { FileSpreadsheet, CheckCircle2, Loader2, Printer, Search, X, Table as TableIcon, FileDown, Download, FileText } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from "@/hooks/use-toast";
 import * as xlsx from 'xlsx';
 import { cn } from '@/lib/utils';
-import ParceriaIdentificationLabel, { type IdentificationData } from './parceria-identification-label';
+import ParceriaIdentificationLabel, { type IdentificationData, type IdentificationItem } from './parceria-identification-label';
+import ParceriaSummaryLabel, { type SummaryItem } from './parceria-summary-label';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 
@@ -23,11 +23,13 @@ interface ParceriaIdentificationViewProps {
 export default function ParceriaIdentificationView({ hub }: ParceriaIdentificationViewProps) {
   const [file, setFile] = useState<File | null>(null);
   const [data, setData] = useState<IdentificationData[]>([]);
+  const [summaryItems, setSummaryItems] = useState<SummaryItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [pdfProgress, setPdfProgress] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedItem, setSelectedItem] = useState<IdentificationData | null>(null);
+  const [showSummary, setShowSummary] = useState(false);
   const [isBulkPrinting, setIsBulkPrinting] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const pdfContainerRef = useRef<HTMLDivElement>(null);
@@ -92,98 +94,82 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
         return;
       }
 
-      const headers = (json[0] || []).map(h => String(h).toUpperCase().trim());
-      
-      const findColIdx = (possibleNames: string[], defaultIdx: number) => {
-        const found = headers.findIndex(h => possibleNames.includes(h));
-        return found !== -1 ? found : defaultIdx;
-      };
-
-      // Mapeamento dinâmico das colunas pelos nomes
-      const idx = {
-        fornecimento: findColIdx(['FORNECIMENTO', 'DOC. TRANSPORTE', 'REMESSA'], 0),
-        data: findColIdx(['DATA PLANEJADA', 'DATA DE ENTREGA', 'DATA'], 1),
-        cidade: findColIdx(['CIDADE', 'DESTINO'], 10),
-        recebedor: findColIdx(['RECEBEDOR', 'NOME DO CLIENTE'], 11),
-        material: findColIdx(['MATERIAL', 'SKU'], 12),
-        denominacao: findColIdx(['DENOMINAÇÃO', 'DESCRIÇÃO'], 13),
-        qtd: findColIdx(['QTD', 'QUANTIDADE', 'QTD.FORN.'], 14),
-        carro: findColIdx(['CARRO', 'VEICULO', 'PLACA'], 17), // Coluna R
-        localidade: findColIdx(['LOCALIDADE', 'ESTOQUE'], 18),
-        linha: findColIdx(['LINHA', 'ROTA'], 19), // Coluna T
-        ce: findColIdx(['CE', 'CARREGAMENTO', 'NÚMERO CE', 'CARREG'], 82) // Coluna CE
-      };
+      // Coluna B: Data do picking (Índice 1)
+      // Coluna R: CE (Índice 17)
+      const idxData = 1;
+      const idxCE = 17;
+      const idxCidade = 10;
+      const idxRecebedor = 11;
+      const idxMaterial = 12;
+      const idxDenominacao = 13;
+      const idxQtd = 14;
+      const idxLocalidade = 18;
+      const idxLinha = 19;
 
       const groupedMap = new Map<string, IdentificationData>();
+      const globalSummaryMap = new Map<string, SummaryItem>();
 
       json.slice(1).forEach(row => {
-        // Puxa o valor da coluna CE (índice mapeado) para identificar a folha
-        const ceOriginal = String(row[idx.ce] || '').trim();
-        const dataEntrega = formatExcelDate(row[idx.data]);
+        const ceOriginal = String(row[idxCE] || '').trim();
+        const dataEntrega = formatExcelDate(row[idxData]);
         
-        // Se CE for vazio ou 0, ignoramos ou tratamos
         if (!ceOriginal || ceOriginal === '0' || !dataEntrega) return;
 
-        // Unificamos por CE + DATA conforme solicitado
         const groupKey = `${ceOriginal}|${dataEntrega}`;
-
-        const material = String(row[idx.material] || '').trim();
-        const denominacao = String(row[idx.denominacao] || '').trim();
-        const qtd = Number(row[idx.qtd] || 0);
+        const material = String(row[idxMaterial] || '').trim();
+        const denominacao = String(row[idxDenominacao] || '').trim();
+        const qtd = Number(row[idxQtd] || 0);
         
-        const cidade = String(row[idx.cidade] || '').trim();
-        const recebedor = String(row[idx.recebedor] || '').trim();
-        const carro = String(row[idx.carro] || '').trim();
-        const linha = String(row[idx.linha] || '').trim();
-        const localidade = String(row[idx.localidade] || '').trim();
+        const cidade = String(row[idxCidade] || '').trim();
+        const recebedor = String(row[idxRecebedor] || '').trim();
+        const localidade = String(row[idxLocalidade] || '').trim();
+        const linha = String(row[idxLinha] || '').trim();
 
-        const newItem = {
-          material,
-          denominacao,
-          qtd
-        };
-
+        // Agrupamento por CE + Data
         if (groupedMap.has(groupKey)) {
           const existing = groupedMap.get(groupKey)!;
-          
           const existingItem = existing.items.find(i => i.material === material);
           if (existingItem) {
             existingItem.qtd += qtd;
           } else {
-            existing.items.push(newItem);
+            existing.items.push({ material, denominacao, qtd });
           }
-          
-          if (!existing.carro && carro) existing.carro = carro;
-          if (!existing.linha && linha) existing.linha = linha;
-          if (!existing.cidade && cidade) existing.cidade = cidade;
-          if (!existing.recebedor && recebedor) existing.recebedor = recebedor;
         } else {
           groupedMap.set(groupKey, {
-            fornecimento: ceOriginal, // Usamos o CE como código principal da folha
+            fornecimento: ceOriginal,
             cidade,
             recebedor,
             dataEntrega,
-            items: [newItem],
+            items: [{ material, denominacao, qtd }],
             localidade,
-            carro,
             linha,
+            carro: localidade
           });
+        }
+
+        // Consolidação Geral (Resumo de todos os itens)
+        if (globalSummaryMap.has(material)) {
+          globalSummaryMap.get(material)!.qtd += qtd;
+        } else {
+          globalSummaryMap.set(material, { material, denominacao, qtd });
         }
       });
 
       const extractedData = Array.from(groupedMap.values());
+      const summary = Array.from(globalSummaryMap.values()).sort((a, b) => a.denominacao.localeCompare(b.denominacao));
 
       if (extractedData.length === 0) {
         toast({
           title: "Nenhum dado válido encontrado",
-          description: "Verifique se o arquivo possui as colunas necessárias (CE, Data, etc).",
+          description: "Verifique se a coluna B (Data) e R (CE) estão preenchidas.",
           variant: "destructive",
         });
       } else {
         setData(extractedData);
+        setSummaryItems(summary);
         toast({
-          title: "Sucesso!",
-          description: `${extractedData.length} folhas de identificação geradas.`,
+          title: "Processamento Concluído",
+          description: `${extractedData.length} folhas por CE e 1 folha de resumo geradas.`,
         });
       }
     } catch (error) {
@@ -204,9 +190,7 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
       item.fornecimento.toLowerCase().includes(searchTerm.toLowerCase()) || 
       item.cidade.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.recebedor.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.dataEntrega.includes(searchTerm) ||
-      (item.carro && item.carro.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (item.linha && item.linha.toLowerCase().includes(searchTerm.toLowerCase()))
+      item.dataEntrega.includes(searchTerm)
     );
   }, [data, searchTerm]);
 
@@ -237,7 +221,6 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
     setIsGeneratingPDF(true);
     setPdfProgress(0);
     
-    // Configura jsPDF com compressão ativada
     const doc = new jsPDF({
       orientation: 'p',
       unit: 'mm',
@@ -254,50 +237,31 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
     setIsBulkPrinting(true);
 
     try {
-      // Pequeno atraso para garantir renderização do container invisível
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
       const pages = container.querySelectorAll('.printable-area');
       
       for (let i = 0; i < pages.length; i++) {
         setPdfProgress(Math.round(((i + 1) / pages.length) * 100));
-        
         const page = pages[i] as HTMLElement;
-        
-        // Escala reduzida para 1.5 para salvar memória sem perder muita qualidade
         const canvas = await html2canvas(page, {
           scale: 1.5,
           useCORS: true,
           logging: false,
           backgroundColor: '#ffffff',
-          windowWidth: 794, // Largura aproximada de A4 em 96dpi
+          windowWidth: 794,
         });
-        
-        // Usa JPEG com compressão rápida para evitar RangeError no buffer de string
         const imgData = canvas.toDataURL('image/jpeg', 0.85);
-        
         if (i > 0) doc.addPage();
         doc.addImage(imgData, 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
-        
-        // Limpeza de memória do canvas para a próxima iteração
         canvas.width = 0;
         canvas.height = 0;
       }
 
-      const fileName = `identificacao_CE_${hub}_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`;
-      doc.save(fileName);
-      
-      toast({
-        title: "Download concluído",
-        description: "O arquivo PDF foi salvo na sua máquina.",
-      });
+      doc.save(`identificacao_CE_${hub}_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`);
+      toast({ title: "PDF Gerado com sucesso!" });
     } catch (err) {
       console.error(err);
-      toast({
-        title: "Erro ao gerar PDF",
-        description: "O volume de dados é muito alto. Tente filtrar por data antes de baixar.",
-        variant: "destructive",
-      });
+      toast({ title: "Erro ao gerar PDF", variant: "destructive" });
     } finally {
       setIsGeneratingPDF(false);
       setIsBulkPrinting(false);
@@ -305,36 +269,11 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
     }
   };
 
-  const exportToExcel = () => {
-    if (filteredData.length === 0) return;
-    
-    const exportData = filteredData.map(item => ({
-      "CE": item.fornecimento,
-      "Data Entrega": item.dataEntrega,
-      "Cidade": item.cidade,
-      "Recebedor": item.recebedor,
-      "Carro (R)": item.carro,
-      "Linha (T)": item.linha,
-      "Localidade": item.localidade,
-      "Qtd SKUs": item.items.length,
-      "Total UN": item.items.reduce((acc, i) => acc + i.qtd, 0)
-    }));
-
-    const worksheet = xlsx.utils.json_to_sheet(exportData);
-    const workbook = xlsx.utils.book_new();
-    xlsx.utils.book_append_sheet(workbook, worksheet, "Relatório CE");
-    xlsx.writeFile(workbook, `relatorio_CE_${hub}_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.xlsx`);
-  };
-
   if (isBulkPrinting && !isGeneratingPDF) {
     return (
       <div className="printable-area">
         {filteredData.map((item, idx) => (
-          <ParceriaIdentificationLabel 
-            key={idx}
-            data={item} 
-            hideControls={true}
-          />
+          <ParceriaIdentificationLabel key={idx} data={item} hideControls={true} />
         ))}
       </div>
     );
@@ -346,38 +285,19 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
         <div className="fixed inset-0 z-[100] bg-background/80 backdrop-blur-sm flex items-center justify-center p-6">
           <Card className="w-full max-w-md shadow-2xl border-2 border-primary">
             <CardHeader>
-              <CardTitle className="text-center font-headline">Gerando Arquivo PDF...</CardTitle>
+              <CardTitle className="text-center font-headline">Gerando PDF do Lote...</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <Progress value={pdfProgress} className="h-4" />
-              <p className="text-center text-sm font-medium text-muted-foreground">
-                Processando página {Math.ceil((pdfProgress / 100) * filteredData.length)} de {filteredData.length}
-              </p>
-              <p className="text-xs text-center text-muted-foreground italic">
-                Aguarde a conclusão, o download iniciará automaticamente.
-              </p>
+              <p className="text-center text-sm font-medium">{pdfProgress}% concluído</p>
             </CardContent>
           </Card>
         </div>
       )}
 
-      {/* Container invisível para captura do PDF */}
-      <div 
-        ref={pdfContainerRef} 
-        style={{ 
-          position: 'absolute', 
-          left: '-10000px', 
-          top: '-10000px',
-          zIndex: -1,
-          visibility: isGeneratingPDF ? 'visible' : 'hidden'
-        }}
-      >
+      <div ref={pdfContainerRef} style={{ position: 'absolute', left: '-10000px', top: '-10000px', visibility: isGeneratingPDF ? 'visible' : 'hidden' }}>
         {filteredData.map((item, idx) => (
-          <ParceriaIdentificationLabel 
-            key={idx}
-            data={item} 
-            hideControls={true}
-          />
+          <ParceriaIdentificationLabel key={idx} data={item} hideControls={true} />
         ))}
       </div>
 
@@ -385,14 +305,14 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
         <CardHeader>
           <CardTitle className="flex items-center gap-2 font-headline uppercase">
             <TableIcon className="text-accent h-6 w-6" />
-            Identificação por CE (Agrupado por Data)
+            Unificação Parceria (Col B e R)
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div 
             className={cn(
               "p-10 border-2 border-dashed rounded-xl cursor-pointer transition-all flex flex-col items-center justify-center gap-4",
-              file ? "bg-green-50 border-green-500" : "bg-muted/30 border-accent/30 hover:border-accent hover:bg-accent/5"
+              file ? "bg-green-50 border-green-500" : "bg-muted/30 border-accent/30 hover:border-accent"
             )}
             onClick={() => inputRef.current?.click()}
           >
@@ -400,18 +320,12 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
             {file ? (
               <>
                 <CheckCircle2 className="h-12 w-12 text-green-600" />
-                <div className="text-center">
-                  <p className="font-bold text-lg text-green-800">{file.name}</p>
-                  <Button variant="link" onClick={(e) => { e.stopPropagation(); setFile(null); setData([]); }}>Remover arquivo</Button>
-                </div>
+                <p className="font-bold text-lg text-green-800">{file.name}</p>
               </>
             ) : (
               <>
                 <FileSpreadsheet className="h-16 w-16 text-accent opacity-50" />
-                <div className="text-center">
-                  <p className="font-bold text-lg">Selecione o arquivo .xlsm</p>
-                  <p className="text-sm text-muted-foreground">Aba necessária: VL06O</p>
-                </div>
+                <p className="font-bold text-lg">Clique para selecionar o arquivo Excel</p>
               </>
             )}
           </div>
@@ -420,7 +334,7 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
           {file && data.length === 0 && (
             <Button onClick={processFile} disabled={isLoading} style={{ backgroundColor: '#D40511' }}>
               {isLoading ? <Loader2 className="animate-spin mr-2" /> : <Search className="mr-2" />}
-              Gerar Folhas por CE e Data
+              Processar Unificação por CE
             </Button>
           )}
         </CardFooter>
@@ -431,30 +345,24 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
           <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <CardTitle className="text-xl font-headline">CEs Consolidados ({filteredData.length})</CardTitle>
             <div className="flex flex-wrap items-center gap-2">
-              <Button onClick={exportToExcel} variant="outline" className="border-green-600 text-green-700 hover:bg-green-50">
-                <FileDown className="mr-2 h-4 w-4" />
-                Excel
+              <Button onClick={() => setShowSummary(true)} variant="outline" className="border-primary text-primary hover:bg-primary/5">
+                <FileText className="mr-2 h-4 w-4" />
+                Resumo Geral
               </Button>
               <Button onClick={downloadDirectPDF} className="bg-primary hover:bg-primary/90">
                 <Download className="mr-2 h-4 w-4" />
-                Baixar PDF Direto
+                Baixar PDF
               </Button>
-              <Button onClick={handleBulkPrint} variant="outline" className="bg-accent/10 text-accent hover:bg-accent/20">
+              <Button onClick={handleBulkPrint} variant="outline">
                 <Printer className="mr-2 h-4 w-4" />
-                Imprimir
+                Imprimir Lote
               </Button>
-              <div className="relative">
-                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input 
-                  placeholder="Buscar CE, cidade, data..." 
-                  className="pl-8 w-48 md:w-64" 
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-              <Button variant="outline" size="sm" onClick={() => setSearchTerm('')}>
-                <X className="h-4 w-4" />
-              </Button>
+              <Input 
+                placeholder="Filtrar CE ou Cidade..." 
+                className="w-48" 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
           </CardHeader>
           <CardContent>
@@ -462,34 +370,27 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
               <Table>
                 <TableHeader className="sticky top-0 bg-card z-10 shadow-sm">
                   <TableRow>
-                    <TableHead>CE (Identificação)</TableHead>
-                    <TableHead>Data Entrega</TableHead>
+                    <TableHead>CE (R)</TableHead>
+                    <TableHead>Data Picking (B)</TableHead>
                     <TableHead>Cidade</TableHead>
-                    <TableHead className="text-center">Total UN</TableHead>
-                    <TableHead className="text-center">Carro</TableHead>
-                    <TableHead className="text-center">Linha</TableHead>
+                    <TableHead className="text-center">Qtd Itens</TableHead>
                     <TableHead className="text-right">Ação</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredData.map((item, idx) => {
-                    const totalQtd = item.items.reduce((acc, i) => acc + i.qtd, 0);
-                    return (
+                  {filteredData.map((item, idx) => (
                     <TableRow key={idx} className="hover:bg-muted/50">
                       <TableCell className="font-mono font-bold">{item.fornecimento}</TableCell>
                       <TableCell>{item.dataEntrega}</TableCell>
                       <TableCell className="font-medium">{item.cidade}</TableCell>
-                      <TableCell className="text-center font-bold text-primary">{totalQtd} UN</TableCell>
-                      <TableCell className="text-center">{item.carro || '-'}</TableCell>
-                      <TableCell className="text-center">{item.linha || '-'}</TableCell>
+                      <TableCell className="text-center font-bold text-primary">{item.items.length}</TableCell>
                       <TableCell className="text-right">
                         <Button size="sm" variant="outline" onClick={() => setSelectedItem(item)}>
-                          <Printer className="mr-2 h-4 w-4" />
-                          Ver
+                          Visualizar
                         </Button>
                       </TableCell>
                     </TableRow>
-                  )})}
+                  ))}
                 </TableBody>
               </Table>
             </ScrollArea>
@@ -506,6 +407,18 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
                 onNavigate={handleNavigate}
                 currentIndex={filteredData.findIndex(i => i.fornecimento === selectedItem.fornecimento && i.dataEntrega === selectedItem.dataEntrega)}
                 totalItems={filteredData.length}
+             />
+           </div>
+        </div>
+      )}
+
+      {showSummary && (
+        <div className="fixed inset-0 z-50 bg-background/95 overflow-y-auto pt-4 pb-12" onClick={() => setShowSummary(false)}>
+           <div className="min-h-full flex items-start justify-center p-4" onClick={(e) => e.stopPropagation()}>
+             <ParceriaSummaryLabel 
+                items={summaryItems} 
+                onClose={() => setShowSummary(false)} 
+                hub={hub}
              />
            </div>
         </div>
