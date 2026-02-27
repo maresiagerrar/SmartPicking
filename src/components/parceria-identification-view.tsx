@@ -89,9 +89,10 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
         const qtd = Number(row[14] || 0);
         const dataEntrega = formatExcelDate(row[1]);
         
-        // Coluna CE é o índice 82. Coluna T (Linha curta) é o índice 19.
-        // Priorizamos a coluna CE por conter a informação completa pedida pelo usuário.
-        const carroInfo = String(row[82] || row[19] || '').trim();
+        // Coluna R (Carro) é índice 17. Coluna T (Linha) é índice 19.
+        const carro = String(row[17] || '').trim();
+        const linha = String(row[19] || '').trim();
+        const combinedCarroLinha = carro && linha ? `${carro} - ${linha}` : (carro || linha);
 
         const newItem = {
           material,
@@ -102,8 +103,9 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
         if (groupedMap.has(fornecimento)) {
           const existing = groupedMap.get(fornecimento)!;
           existing.items.push(newItem);
-          if (!existing.linha && carroInfo) {
-            existing.linha = carroInfo;
+          // Atualiza a informação de linha se ela for encontrada em linhas subsequentes
+          if (!existing.linha && combinedCarroLinha) {
+            existing.linha = combinedCarroLinha;
           }
         } else {
           groupedMap.set(fornecimento, {
@@ -113,7 +115,7 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
             dataEntrega,
             items: [newItem],
             localidade: String(row[18] || '').trim(),
-            linha: carroInfo,
+            linha: combinedCarroLinha,
           });
         }
       });
@@ -275,7 +277,7 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
                     <TableHead>Cidade</TableHead>
                     <TableHead className="text-center">Qtd Itens</TableHead>
                     <TableHead className="text-center">Total UDC</TableHead>
-                    <TableHead className="text-center">Linha (Coluna CE)</TableHead>
+                    <TableHead className="text-center">Carro / Linha (R / T)</TableHead>
                     <TableHead className="text-right">Ação</TableHead>
                   </TableRow>
                 </TableHeader>
