@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "./ui/button";
-import { Printer, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Printer, X, ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 import Barcode from 'react-barcode';
 import { cn } from "@/lib/utils";
 
@@ -15,6 +15,7 @@ export type IdentificationData = {
   fornecimento: string;
   cidade: string;
   recebedor: string;
+  dataEntrega: string;
   items: IdentificationItem[];
   localidade: string;
   linha: string;
@@ -96,11 +97,15 @@ export default function ParceriaIdentificationLabel({
              backgroundColor: 'white'
            }}>
         
-        {/* Header - City & Line */}
+        {/* Header - City, Date & Line */}
         <div className="flex justify-between items-start border-b-4 border-black pb-4 mb-6">
           <div className="flex-1">
             <h2 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">Cidade / Destino</h2>
-            <h1 className="text-5xl font-black uppercase leading-tight">{data.cidade || 'N/A'}</h1>
+            <h1 className="text-5xl font-black uppercase leading-tight mb-2">{data.cidade || 'N/A'}</h1>
+            <div className="flex items-center gap-2 text-2xl font-bold bg-gray-100 w-fit px-3 py-1 rounded">
+              <Calendar className="h-6 w-6" />
+              <span>DATA ENTREGA: {data.dataEntrega || '-'}</span>
+            </div>
           </div>
           <div className="text-right ml-4">
             <h2 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">Linha</h2>

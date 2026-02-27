@@ -74,6 +74,7 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
         const material = String(row[12] || '').trim();
         const denominacao = String(row[13] || '').trim();
         const qtd = Number(row[14] || 0);
+        const dataEntrega = String(row[1] || '').trim();
 
         const newItem = {
           material,
@@ -89,6 +90,7 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
             fornecimento,
             cidade,
             recebedor: String(row[11] || '').trim(),
+            dataEntrega,
             items: [newItem],
             localidade: String(row[18] || '').trim(),
             linha: String(row[19] || '').trim(),
@@ -120,7 +122,8 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
     return data.filter(item => 
       item.fornecimento.includes(searchTerm) || 
       item.cidade.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.recebedor.toLowerCase().includes(searchTerm.toLowerCase())
+      item.recebedor.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.dataEntrega.includes(searchTerm)
     );
   }, [data, searchTerm]);
 
@@ -230,7 +233,7 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
               <div className="relative">
                 <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input 
-                  placeholder="Buscar fornecimento ou cidade..." 
+                  placeholder="Buscar fornecimento, cidade ou data..." 
                   className="pl-8 w-64" 
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -247,6 +250,7 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
                 <TableHeader className="sticky top-0 bg-card z-10 shadow-sm">
                   <TableRow>
                     <TableHead>Fornecimento</TableHead>
+                    <TableHead>Data Entrega</TableHead>
                     <TableHead>Cidade</TableHead>
                     <TableHead>Nº Itens</TableHead>
                     <TableHead>Total UDC</TableHead>
@@ -260,6 +264,7 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
                     return (
                     <TableRow key={idx}>
                       <TableCell className="font-mono">{item.fornecimento}</TableCell>
+                      <TableCell>{item.dataEntrega}</TableCell>
                       <TableCell className="font-bold">{item.cidade}</TableCell>
                       <TableCell className="text-center">{item.items.length}</TableCell>
                       <TableCell className="text-center font-bold">{totalQtd} UN</TableCell>
