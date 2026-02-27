@@ -95,6 +95,7 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
         return;
       }
 
+      // Colunas B (1) e R (17) conforme especificado
       const idxData = 1;
       const idxCE = 17;
       const idxCidade = 10;
@@ -235,8 +236,7 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
 
     try {
       await new Promise(resolve => setTimeout(resolve, 1000));
-      // Buscamos apenas os elementos com a classe exata 'printable-area' para evitar duplicação
-      const pages = container.querySelectorAll('.printable-area');
+      const pages = container.querySelectorAll('.identification-page-container');
       
       for (let i = 0; i < pages.length; i++) {
         setPdfProgress(Math.round(((i + 1) / pages.length) * 100));
@@ -283,7 +283,7 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
         <div className="fixed inset-0 z-[100] bg-background/80 backdrop-blur-sm flex items-center justify-center p-6">
           <Card className="w-full max-w-md shadow-2xl border-2 border-primary">
             <CardHeader>
-              <CardTitle className="text-center font-headline">Gerando PDF do Lote...</CardTitle>
+              <CardTitle className="text-center font-headline">Gerando PDF...</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <Progress value={pdfProgress} className="h-4" />
@@ -353,7 +353,7 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
               </Button>
               <Button onClick={handleBulkPrint} variant="outline">
                 <Printer className="mr-2 h-4 w-4" />
-                Imprimir Lote
+                Imprimir
               </Button>
               <Input 
                 placeholder="Filtrar CE ou Cidade..." 
