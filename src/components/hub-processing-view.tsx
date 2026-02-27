@@ -8,14 +8,19 @@ import type { DataRow } from "@/lib/types";
 import { processFiles } from "@/ai/flows/process-files-flow";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft } from "lucide-react";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { ChevronLeft, Ticket, Search, ArrowRight } from "lucide-react";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 interface HubProcessingViewProps {
   hub: 'campinas' | 'contagem';
 }
 
+type ViewMode = 'selection' | 'etiqueta' | 'identificacao';
+
 export default function HubProcessingView({ hub }: HubProcessingViewProps) {
+  const [viewMode, setViewMode] = useState<ViewMode>('selection');
   const [mainData, setMainData] = useState<DataRow[] | null>(null);
   const [parceriaData, setParceriaData] = useState<DataRow[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -78,27 +83,105 @@ export default function HubProcessingView({ hub }: HubProcessingViewProps) {
     setParceriaData(null);
   };
 
+  const handleBackToSelection = () => {
+    setViewMode('selection');
+    handleReset();
+  };
+
+  if (viewMode === 'selection') {
+    return (
+      <div className="max-w-5xl mx-auto">
+        <div className="mb-8 flex items-center justify-between">
+          <Link href="/">
+            <Button variant="ghost" size="sm">
+              <ChevronLeft className="mr-2 h-4 w-4" />
+              Voltar para HUBs
+            </Button>
+          </Link>
+          <div className="text-right">
+            <span className="text-xs uppercase tracking-widest text-muted-foreground font-bold">HUB ATIVO</span>
+            <h3 className="text-xl font-bold font-headline uppercase">{hub}</h3>
+          </div>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-8">
+          <Card 
+            className="group hover:shadow-xl transition-all duration-300 cursor-pointer border-2 hover:border-primary"
+            onClick={() => setViewMode('etiqueta')}
+          >
+            <CardHeader>
+              <div className="flex justify-between items-start">
+                <div className="p-3 rounded-lg bg-muted group-hover:bg-primary/10 transition-colors">
+                  <Ticket className="w-8 h-8 text-primary" />
+                </div>
+                <ArrowRight className="w-6 h-6 text-muted-foreground group-hover:text-primary transform group-hover:translate-x-2 transition-all" />
+              </div>
+              <CardTitle className="text-2xl font-headline mt-4">ETIQUETA</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">Processamento de arquivos TARJA e VL06O para geração de etiquetas e relatórios.</p>
+            </CardContent>
+          </Card>
+
+          <Card 
+            className="group hover:shadow-xl transition-all duration-300 cursor-pointer border-2 hover:border-accent"
+            onClick={() => setViewMode('identificacao')}
+          >
+            <CardHeader>
+              <div className="flex justify-between items-start">
+                <div className="p-3 rounded-lg bg-muted group-hover:bg-accent/10 transition-colors">
+                  <Search className="w-8 h-8 text-accent" />
+                </div>
+                <ArrowRight className="w-6 h-6 text-muted-foreground group-hover:text-accent transform group-hover:translate-x-2 transition-all" />
+              </div>
+              <CardTitle className="text-2xl font-headline mt-4 uppercase">Identificação Parceria Bruta</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">Ferramenta para identificação e triagem de itens de parceria bruta.</p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-7xl mx-auto">
       <div className="mb-6 flex items-center justify-between non-printable">
-        <Link href="/">
-          <Button variant="ghost" size="sm">
-            <ChevronLeft className="mr-2 h-4 w-4" />
-            Voltar para HUBs
-          </Button>
-        </Link>
+        <Button variant="ghost" size="sm" onClick={handleBackToSelection}>
+          <ChevronLeft className="mr-2 h-4 w-4" />
+          Voltar para Opções do HUB
+        </Button>
         <div className="text-right">
-          <span className="text-xs uppercase tracking-widest text-muted-foreground font-bold">HUB ATIVO</span>
-          <h3 className="text-lg font-bold font-headline uppercase">{hub}</h3>
+          <div className="flex flex-col items-end">
+             <div className="flex items-center gap-2">
+                <span className="text-xs uppercase tracking-widest text-muted-foreground font-bold">HUB {hub}</span>
+                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary uppercase">
+                  {viewMode === 'etiqueta' ? 'Etiqueta' : 'Parceria Bruta'}
+                </span>
+             </div>
+          </div>
         </div>
       </div>
 
-      { !mainData ? (
-        <FileUploadCard onProcess={handleProcessing} isLoading={isLoading} hub={hub} />
+      {viewMode === 'etiqueta' ? (
+        <>
+          { !mainData ? (
+            <FileUploadCard onProcess={handleProcessing} isLoading={isLoading} hub={hub} />
+          ) : (
+            <div className="printable-area">
+              <GeneratedTable data={mainData} parceriaData={parceriaData || []} onReset={handleReset} />
+            </div>
+          )}
+        </>
       ) : (
-        <div className="printable-area">
-          <GeneratedTable data={mainData} parceriaData={parceriaData || []} onReset={handleReset} />
-        </div>
+        <Card className="min-h-[400px] flex items-center justify-center border-dashed">
+          <CardContent className="text-center">
+            <Search className="w-16 h-16 mx-auto text-muted-foreground mb-4 opacity-20" />
+            <h2 className="text-2xl font-bold text-muted-foreground opacity-50 uppercase">Identificação Parceria Bruta</h2>
+            <p className="text-muted-foreground mt-2">Novas funcionalidades serão adicionadas aqui em breve.</p>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
