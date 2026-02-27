@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Button } from "./ui/button";
@@ -50,7 +51,7 @@ export default function ParceriaIdentificationLabel({
     <div className={cn(
       "bg-white text-black flex flex-col items-center",
       !hideControls && "w-full flex-1",
-      hideControls && "page-break printable-area"
+      hideControls && "page-break identification-page-container"
     )}>
       {!hideControls && (
         <div className="w-full max-w-4xl flex justify-between items-center mb-6 bg-muted p-4 rounded-lg border non-printable shadow-sm sticky top-0 z-10">

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useRef, useMemo } from 'react';
@@ -94,8 +95,6 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
         return;
       }
 
-      // Coluna B: Data do picking (Índice 1)
-      // Coluna R: CE (Índice 17)
       const idxData = 1;
       const idxCE = 17;
       const idxCidade = 10;
@@ -125,7 +124,6 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
         const localidade = String(row[idxLocalidade] || '').trim();
         const linha = String(row[idxLinha] || '').trim();
 
-        // Agrupamento por CE + Data
         if (groupedMap.has(groupKey)) {
           const existing = groupedMap.get(groupKey)!;
           const existingItem = existing.items.find(i => i.material === material);
@@ -147,7 +145,6 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
           });
         }
 
-        // Consolidação Geral (Resumo de todos os itens)
         if (globalSummaryMap.has(material)) {
           globalSummaryMap.get(material)!.qtd += qtd;
         } else {
@@ -238,6 +235,7 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
 
     try {
       await new Promise(resolve => setTimeout(resolve, 1000));
+      // Buscamos apenas os elementos com a classe exata 'printable-area' para evitar duplicação
       const pages = container.querySelectorAll('.printable-area');
       
       for (let i = 0; i < pages.length; i++) {
@@ -271,7 +269,7 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
 
   if (isBulkPrinting && !isGeneratingPDF) {
     return (
-      <div className="printable-area">
+      <div className="flex flex-col gap-4">
         {filteredData.map((item, idx) => (
           <ParceriaIdentificationLabel key={idx} data={item} hideControls={true} />
         ))}
