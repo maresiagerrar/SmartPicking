@@ -5,7 +5,7 @@ import { useState, useRef, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { FileSpreadsheet, CheckCircle2, Loader2, Printer, Search, X, Table as TableIcon, FileDown, FileText, Download } from 'lucide-react';
+import { FileSpreadsheet, CheckCircle2, Loader2, Printer, Search, X, Table as TableIcon, FileDown, Download } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Progress } from '@/components/ui/progress';
@@ -188,32 +188,35 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
     });
 
     const container = pdfContainerRef.current;
-    if (!container) return;
+    if (!container) {
+      setIsGeneratingPDF(false);
+      return;
+    }
 
-    // Mostrar o container temporariamente para o html2canvas
     setIsBulkPrinting(true);
 
     try {
-      for (let i = 0; i < filteredData.length; i++) {
-        setPdfProgress(Math.round(((i + 1) / filteredData.length) * 100));
+      // Pequeno delay para garantir que o container oculto foi renderizado
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const pages = container.querySelectorAll('.printable-area');
+      
+      for (let i = 0; i < pages.length; i++) {
+        setPdfProgress(Math.round(((i + 1) / pages.length) * 100));
         
-        // Selecionar cada página A4 individualmente dentro do container
-        const pages = container.querySelectorAll('.printable-area');
         const page = pages[i] as HTMLElement;
         
-        if (page) {
-          const canvas = await html2canvas(page, {
-            scale: 2, // Aumentar escala para melhor resolução
-            useCORS: true,
-            logging: false,
-          });
-          
-          const imgData = canvas.toDataURL('image/png');
-          
-          if (i > 0) doc.addPage();
-          
-          doc.addImage(imgData, 'PNG', 0, 0, 210, 297);
-        }
+        const canvas = await html2canvas(page, {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff'
+        });
+        
+        const imgData = canvas.toDataURL('image/png');
+        
+        if (i > 0) doc.addPage();
+        doc.addImage(imgData, 'PNG', 0, 0, 210, 297);
       }
 
       const fileName = `parceria_bruta_${hub}_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`;
@@ -277,40 +280,6 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
     );
   }
 
-  // Div escondida para renderização do PDF via html2canvas
-  const HiddenPDFContent = () => (
-    <div 
-      ref={pdfContainerRef} 
-      style={{ 
-        position: 'absolute', 
-        left: '-10000px', 
-        top: '-10000px',
-        zIndex: -1,
-        visibility: 'visible' 
-      }}
-    >
-      {filteredData.map((item, idx) => (
-        <ParceriaIdentificationLabel 
-          key={idx}
-          data={item} 
-          hideControls={true}
-        />
-      ))}
-    </div>
-  );
-
-  if (selectedItem) {
-    return (
-      <ParceriaIdentificationLabel 
-        data={selectedItem} 
-        onClose={() => setSelectedItem(null)} 
-        onNavigate={handleNavigate}
-        currentIndex={filteredData.indexOf(selectedItem)}
-        totalItems={filteredData.length}
-      />
-    );
-  }
-
   return (
     <div className="space-y-6">
       {isGeneratingPDF && (
@@ -329,8 +298,25 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
         </div>
       )}
 
-      {/* Container escondido para geração do PDF */}
-      {isGeneratingPDF && <HiddenPDFContent />}
+      {/* Container escondido para renderização do PDF */}
+      <div 
+        ref={pdfContainerRef} 
+        style={{ 
+          position: 'absolute', 
+          left: '-10000px', 
+          top: '-10000px',
+          zIndex: -1,
+          visibility: isGeneratingPDF ? 'visible' : 'hidden'
+        }}
+      >
+        {filteredData.map((item, idx) => (
+          <ParceriaIdentificationLabel 
+            key={idx}
+            data={item} 
+            hideControls={true}
+          />
+        ))}
+      </div>
 
       <Card className="shadow-lg border-2 border-accent/20 non-printable">
         <CardHeader>
