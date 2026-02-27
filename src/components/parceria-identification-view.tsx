@@ -32,7 +32,6 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
       return val.toLocaleDateString('pt-BR');
     }
     if (typeof val === 'number') {
-      // Excel serial date to JS Date conversion
       const date = new Date(Math.round((val - 25569) * 86400 * 1000));
       return date.toLocaleDateString('pt-BR');
     }
@@ -88,6 +87,9 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
         const denominacao = String(row[13] || '').trim();
         const qtd = Number(row[14] || 0);
         const dataEntrega = formatExcelDate(row[1]);
+        
+        // Mapeamento: Coluna CE é o índice 82
+        const carroInfo = String(row[82] || row[19] || '').trim();
 
         const newItem = {
           material,
@@ -106,7 +108,7 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
             dataEntrega,
             items: [newItem],
             localidade: String(row[18] || '').trim(),
-            linha: String(row[19] || '').trim(),
+            linha: carroInfo,
           });
         }
       });
@@ -136,7 +138,8 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
       item.fornecimento.includes(searchTerm) || 
       item.cidade.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.recebedor.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.dataEntrega.includes(searchTerm)
+      item.dataEntrega.includes(searchTerm) ||
+      item.linha.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [data, searchTerm]);
 
@@ -246,7 +249,7 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
               <div className="relative">
                 <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input 
-                  placeholder="Buscar fornecimento, cidade ou data..." 
+                  placeholder="Buscar fornecimento, cidade ou linha..." 
                   className="pl-8 w-64" 
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -267,7 +270,7 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
                     <TableHead>Cidade</TableHead>
                     <TableHead>Nº Itens</TableHead>
                     <TableHead>Total UDC</TableHead>
-                    <TableHead>Linha</TableHead>
+                    <TableHead>Carro/Linha</TableHead>
                     <TableHead className="text-right">Ação</TableHead>
                   </TableRow>
                 </TableHeader>
