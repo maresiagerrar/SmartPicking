@@ -162,10 +162,22 @@ function insertAttentionRows(data: DataRow[]): DataRow[] {
 }
 
 export async function processFiles(input: ProcessFilesInput): Promise<ProcessFilesOutput> {
-    const txtData = parseTxtFile(input.txtContent);
+    const txtDataRaw = parseTxtFile(input.txtContent);
     const excelData = parseExcelFile(input.excelContent);
     const shipTrackerMap = input.shipTrackerContent ? parseShipTracker(input.shipTrackerContent) : new Map<string, string>();
     
+    // Consolidação de remessas: Agrupa por número de remessa e soma as quantidades
+    const aggregatedTxtMap = new Map<string, TxtData>();
+    txtDataRaw.forEach(item => {
+        if (aggregatedTxtMap.has(item.remessa)) {
+            const existing = aggregatedTxtMap.get(item.remessa)!;
+            existing.qtdEtiqueta += item.qtdEtiqueta;
+        } else {
+            aggregatedTxtMap.set(item.remessa, { ...item });
+        }
+    });
+    const txtData = Array.from(aggregatedTxtMap.values());
+
     const parceriaSkuSet = new Set(parceriaBrutaData.map(item => item.sku));
     const excelDataMap = new Map<string, ExcelData[]>();
     excelData.forEach(item => {
