@@ -86,17 +86,24 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
 
       json.slice(1).forEach(row => {
         const fornecimento = String(row[0] || '').trim();
-        const cidade = String(row[10] || '').trim();
+        const ceOriginal = String(row[82] || '').trim(); // Coluna CE
+        const dataEntrega = formatExcelDate(row[1]); // Coluna B
         
-        if (!fornecimento || !cidade || fornecimento.toUpperCase() === 'FORNECIMENTO') return;
+        // Se não tiver CE ou Data, ignora
+        if (!ceOriginal || !dataEntrega || ceOriginal.toUpperCase() === 'CE') return;
+
+        // Chave de agrupamento: CE + Data (para separar o mesmo CE em datas diferentes)
+        const groupKey = `${ceOriginal}|${dataEntrega}`;
 
         const material = String(row[12] || '').trim();
         const denominacao = String(row[13] || '').trim();
         const qtd = Number(row[14] || 0);
-        const dataEntrega = formatExcelDate(row[1]);
         
+        const cidade = String(row[10] || '').trim();
+        const recebedor = String(row[11] || '').trim();
         const carro = String(row[17] || '').trim();
         const linha = String(row[19] || '').trim();
+        const localidade = String(row[18] || '').trim();
 
         const newItem = {
           material,
@@ -104,21 +111,32 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
           qtd
         };
 
-        if (groupedMap.has(fornecimento)) {
-          const existing = groupedMap.get(fornecimento)!;
-          existing.items.push(newItem);
+        if (groupedMap.has(groupKey)) {
+          const existing = groupedMap.get(groupKey)!;
+          
+          // Verifica se o SKU já existe para somar a quantidade ou adicionar novo
+          const existingItem = existing.items.find(i => i.material === material);
+          if (existingItem) {
+            existingItem.qtd += qtd;
+          } else {
+            existing.items.push(newItem);
+          }
+          
+          // Mantém as informações de cabeçalho (se estiverem vazias)
           if (!existing.carro && carro) existing.carro = carro;
           if (!existing.linha && linha) existing.linha = linha;
+          if (!existing.cidade && cidade) existing.cidade = cidade;
+          if (!existing.recebedor && recebedor) existing.recebedor = recebedor;
         } else {
-          groupedMap.set(fornecimento, {
-            fornecimento,
+          groupedMap.set(groupKey, {
+            fornecimento: ceOriginal, // Usamos o CE como identificador principal do grupo
             cidade,
-            recebedor: String(row[11] || '').trim(),
+            recebedor,
             dataEntrega,
             items: [newItem],
-            localidade: String(row[18] || '').trim(),
-            carro: carro,
-            linha: linha,
+            localidade,
+            carro,
+            linha,
           });
         }
       });
@@ -128,7 +146,7 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
       setData(extractedData);
       toast({
         title: "Sucesso!",
-        description: `${extractedData.length} remessas consolidadas.`,
+        description: `${extractedData.length} grupos de CE consolidados.`,
       });
     } catch (error) {
       console.error(error);
@@ -145,18 +163,18 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
   const filteredData = useMemo(() => {
     if (!searchTerm) return data;
     return data.filter(item => 
-      item.fornecimento.includes(searchTerm) || 
+      item.fornecimento.toLowerCase().includes(searchTerm.toLowerCase()) || 
       item.cidade.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.recebedor.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.dataEntrega.includes(searchTerm) ||
-      item.carro.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.linha.toLowerCase().includes(searchTerm.toLowerCase())
+      (item.carro && item.carro.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (item.linha && item.linha.toLowerCase().includes(searchTerm.toLowerCase()))
     );
   }, [data, searchTerm]);
 
   const handleNavigate = (direction: 'next' | 'prev') => {
     if (!selectedItem) return;
-    const currentIndex = filteredData.findIndex(i => i.fornecimento === selectedItem.fornecimento);
+    const currentIndex = filteredData.findIndex(i => i.fornecimento === selectedItem.fornecimento && i.dataEntrega === selectedItem.dataEntrega);
     let nextIndex;
     if (direction === 'next') {
       nextIndex = (currentIndex + 1) % filteredData.length;
@@ -196,8 +214,7 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
     setIsBulkPrinting(true);
 
     try {
-      // Pequeno delay para garantir que o container oculto foi renderizado
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 800));
       
       const pages = container.querySelectorAll('.printable-area');
       
@@ -219,7 +236,7 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
         doc.addImage(imgData, 'PNG', 0, 0, 210, 297);
       }
 
-      const fileName = `parceria_bruta_${hub}_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`;
+      const fileName = `identificacao_CE_${hub}_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`;
       doc.save(fileName);
       
       toast({
@@ -244,7 +261,7 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
     if (filteredData.length === 0) return;
     
     const exportData = filteredData.map(item => ({
-      "Fornecimento": item.fornecimento,
+      "CE": item.fornecimento,
       "Data Entrega": item.dataEntrega,
       "Cidade": item.cidade,
       "Recebedor": item.recebedor,
@@ -257,13 +274,8 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
 
     const worksheet = xlsx.utils.json_to_sheet(exportData);
     const workbook = xlsx.utils.book_new();
-    xlsx.utils.book_append_sheet(workbook, worksheet, "Relatório Parceria");
-    xlsx.writeFile(workbook, `relatorio_parceria_${hub}_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.xlsx`);
-    
-    toast({
-      title: "Download iniciado",
-      description: "O arquivo Excel foi gerado com sucesso.",
-    });
+    xlsx.utils.book_append_sheet(workbook, worksheet, "Relatório CE");
+    xlsx.writeFile(workbook, `relatorio_CE_${hub}_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.xlsx`);
   };
 
   if (isBulkPrinting && !isGeneratingPDF) {
@@ -286,7 +298,7 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
         <div className="fixed inset-0 z-[100] bg-background/80 backdrop-blur-sm flex items-center justify-center p-6">
           <Card className="w-full max-w-md shadow-2xl">
             <CardHeader>
-              <CardTitle className="text-center font-headline">Gerando Arquivo PDF...</CardTitle>
+              <CardTitle className="text-center font-headline">Gerando PDF dos CEs...</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <Progress value={pdfProgress} className="h-4" />
@@ -298,7 +310,6 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
         </div>
       )}
 
-      {/* Container escondido para renderização do PDF */}
       <div 
         ref={pdfContainerRef} 
         style={{ 
@@ -322,7 +333,7 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
         <CardHeader>
           <CardTitle className="flex items-center gap-2 font-headline uppercase">
             <TableIcon className="text-accent h-6 w-6" />
-            Identificação de Parceria Bruta
+            Identificação por CE (Coluna CE)
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -357,7 +368,7 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
           {file && data.length === 0 && (
             <Button onClick={processFile} disabled={isLoading} style={{ backgroundColor: '#D40511' }}>
               {isLoading ? <Loader2 className="animate-spin mr-2" /> : <Search className="mr-2" />}
-              Carregar e Agrupar Dados
+              Agrupar por CE e Data
             </Button>
           )}
         </CardFooter>
@@ -366,24 +377,24 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
       {data.length > 0 && (
         <Card className="shadow-lg animate-fade-in non-printable">
           <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <CardTitle className="text-xl font-headline">Remessas Consolidadas ({filteredData.length})</CardTitle>
+            <CardTitle className="text-xl font-headline">CEs Consolidados ({filteredData.length})</CardTitle>
             <div className="flex flex-wrap items-center gap-2">
               <Button onClick={exportToExcel} variant="outline" className="border-green-600 text-green-700 hover:bg-green-50">
                 <FileDown className="mr-2 h-4 w-4" />
-                Download Excel
+                Excel
               </Button>
               <Button onClick={downloadDirectPDF} className="bg-primary hover:bg-primary/90">
                 <Download className="mr-2 h-4 w-4" />
-                Baixar PDF Direto
+                Download PDF
               </Button>
               <Button onClick={handleBulkPrint} variant="outline" className="bg-accent/10 text-accent hover:bg-accent/20">
                 <Printer className="mr-2 h-4 w-4" />
-                Imprimir Tudo
+                Imprimir
               </Button>
               <div className="relative">
                 <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input 
-                  placeholder="Buscar remessa, cidade..." 
+                  placeholder="Buscar CE, cidade, data..." 
                   className="pl-8 w-48 md:w-64" 
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -399,13 +410,12 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
               <Table>
                 <TableHeader className="sticky top-0 bg-card z-10 shadow-sm">
                   <TableRow>
-                    <TableHead>Fornecimento</TableHead>
+                    <TableHead>CE (Agrupador)</TableHead>
                     <TableHead>Data Entrega</TableHead>
                     <TableHead>Cidade</TableHead>
-                    <TableHead className="text-center">Qtd Itens</TableHead>
                     <TableHead className="text-center">Total UN</TableHead>
-                    <TableHead className="text-center">Carro (R)</TableHead>
-                    <TableHead className="text-center">Linha (T)</TableHead>
+                    <TableHead className="text-center">Carro</TableHead>
+                    <TableHead className="text-center">Linha</TableHead>
                     <TableHead className="text-right">Ação</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -414,17 +424,16 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
                     const totalQtd = item.items.reduce((acc, i) => acc + i.qtd, 0);
                     return (
                     <TableRow key={idx} className="hover:bg-muted/50">
-                      <TableCell className="font-mono">{item.fornecimento}</TableCell>
+                      <TableCell className="font-mono font-bold">{item.fornecimento}</TableCell>
                       <TableCell>{item.dataEntrega}</TableCell>
-                      <TableCell className="font-bold">{item.cidade}</TableCell>
-                      <TableCell className="text-center">{item.items.length}</TableCell>
+                      <TableCell className="font-medium">{item.cidade}</TableCell>
                       <TableCell className="text-center font-bold text-primary">{totalQtd} UN</TableCell>
-                      <TableCell className="text-center font-bold">{item.carro || '-'}</TableCell>
-                      <TableCell className="text-center font-bold">{item.linha || '-'}</TableCell>
+                      <TableCell className="text-center">{item.carro || '-'}</TableCell>
+                      <TableCell className="text-center">{item.linha || '-'}</TableCell>
                       <TableCell className="text-right">
                         <Button size="sm" variant="outline" onClick={() => setSelectedItem(item)}>
                           <Printer className="mr-2 h-4 w-4" />
-                          Visualizar
+                          Ver
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -434,6 +443,18 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
             </ScrollArea>
           </CardContent>
         </Card>
+      )}
+
+      {selectedItem && (
+        <div className="fixed inset-0 z-50 bg-background/95 flex items-center justify-center p-4">
+           <ParceriaIdentificationLabel 
+              data={selectedItem} 
+              onClose={() => setSelectedItem(null)} 
+              onNavigate={handleNavigate}
+              currentIndex={filteredData.findIndex(i => i.fornecimento === selectedItem.fornecimento && i.dataEntrega === selectedItem.dataEntrega)}
+              totalItems={filteredData.length}
+           />
+        </div>
       )}
     </div>
   );
