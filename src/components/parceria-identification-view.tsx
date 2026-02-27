@@ -63,23 +63,50 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
       const worksheet = workbook.Sheets[sheetName];
       const json = xlsx.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
       
-      const extractedData: IdentificationData[] = json.slice(1)
-        .filter(row => row[0] && row[10])
-        .map(row => ({
-          fornecimento: String(row[0] || '').trim(),
-          cidade: String(row[10] || '').trim(),
-          recebedor: String(row[11] || '').trim(),
-          material: String(row[12] || '').trim(),
-          denominacao: String(row[13] || '').trim(),
-          qtd: row[14] || 0,
-          localidade: String(row[18] || '').trim(),
-          linha: String(row[19] || '').trim(),
-        }));
+      // Agrupamento por Fornecimento
+      const groupedMap = new Map<string, IdentificationData>();
+
+      json.slice(1).forEach(row => {
+        const fornecimento = String(row[0] || '').trim();
+        const cidade = String(row[10] || '').trim();
+        
+        // Filtra linhas inválidas
+        if (!fornecimento || !cidade || fornecimento.toUpperCase() === 'FORNECIMENTO') return;
+
+        const material = String(row[12] || '').trim();
+        const denominacao = String(row[13] || '').trim();
+        const qtd = Number(row[14] || 0);
+
+        if (groupedMap.has(fornecimento)) {
+          const existing = groupedMap.get(fornecimento)!;
+          // Soma a quantidade
+          existing.qtd = Number(existing.qtd) + qtd;
+          
+          // Se o material for diferente, marca como diversos
+          if (existing.material !== material) {
+            existing.material = "DIVERSOS";
+            existing.denominacao = "ITENS DIVERSOS DA REMESSA";
+          }
+        } else {
+          groupedMap.set(fornecimento, {
+            fornecimento,
+            cidade,
+            recebedor: String(row[11] || '').trim(),
+            material,
+            denominacao,
+            qtd,
+            localidade: String(row[18] || '').trim(),
+            linha: String(row[19] || '').trim(),
+          });
+        }
+      });
+
+      const extractedData = Array.from(groupedMap.values());
 
       setData(extractedData);
       toast({
         title: "Sucesso!",
-        description: `${extractedData.length} itens carregados da aba VL06O.`,
+        description: `${extractedData.length} remessas consolidadas da aba VL06O.`,
       });
     } catch (error) {
       console.error(error);
@@ -117,7 +144,6 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
   const handleBulkPrint = () => {
     if (filteredData.length === 0) return;
     setIsBulkPrinting(true);
-    // Pequeno atraso para garantir renderização antes de abrir o diálogo de impressão
     setTimeout(() => {
       window.print();
       setIsBulkPrinting(false);
@@ -191,7 +217,7 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
           {file && data.length === 0 && (
             <Button onClick={processFile} disabled={isLoading} style={{ backgroundColor: '#D40511' }}>
               {isLoading ? <Loader2 className="animate-spin mr-2" /> : <Search className="mr-2" />}
-              Carregar Dados
+              Carregar e Agrupar Dados
             </Button>
           )}
         </CardFooter>
@@ -200,11 +226,11 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
       {data.length > 0 && (
         <Card className="shadow-lg animate-fade-in non-printable">
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-xl font-headline">Resultados extraídos ({filteredData.length})</CardTitle>
+            <CardTitle className="text-xl font-headline">Remessas Consolidadas ({filteredData.length})</CardTitle>
             <div className="flex items-center gap-2">
               <Button onClick={handleBulkPrint} className="bg-green-700 hover:bg-green-800">
                 <FileDown className="mr-2 h-4 w-4" />
-                Gerar PDF (Todos)
+                Gerar PDF Único
               </Button>
               <div className="relative">
                 <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -227,7 +253,8 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
                   <TableRow>
                     <TableHead>Fornecimento</TableHead>
                     <TableHead>Cidade</TableHead>
-                    <TableHead>Recebedor</TableHead>
+                    <TableHead>Produto</TableHead>
+                    <TableHead>Total UDC</TableHead>
                     <TableHead>Linha</TableHead>
                     <TableHead className="text-right">Ação</TableHead>
                   </TableRow>
@@ -237,7 +264,8 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
                     <TableRow key={idx}>
                       <TableCell className="font-mono">{item.fornecimento}</TableCell>
                       <TableCell className="font-bold">{item.cidade}</TableCell>
-                      <TableCell className="truncate max-w-[200px]">{item.recebedor}</TableCell>
+                      <TableCell className="truncate max-w-[200px]">{item.denominacao}</TableCell>
+                      <TableCell className="text-center font-bold">{item.qtd} UN</TableCell>
                       <TableCell className="text-center font-black">{item.linha}</TableCell>
                       <TableCell className="text-right">
                         <Button size="sm" variant="outline" onClick={() => setSelectedItem(item)}>
