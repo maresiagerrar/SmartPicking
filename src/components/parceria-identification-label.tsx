@@ -2,7 +2,7 @@
 "use client";
 
 import { Button } from "./ui/button";
-import { Printer, X, ChevronLeft, ChevronRight, Calendar } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 import Barcode from 'react-barcode';
 import { cn } from "@/lib/utils";
 
@@ -41,10 +41,6 @@ export default function ParceriaIdentificationLabel({
   hideControls = false
 }: ParceriaIdentificationLabelProps) {
   
-  const handlePrint = () => {
-    window.print();
-  };
-
   const totalQtd = data.items.reduce((acc, item) => acc + item.qtd, 0);
 
   return (
@@ -80,10 +76,6 @@ export default function ParceriaIdentificationLabel({
                 </Button>
               </>
             )}
-            <Button onClick={handlePrint} style={{ backgroundColor: '#D40511' }} className="ml-4">
-              <Printer className="mr-2 h-4 w-4" />
-              Imprimir A4
-            </Button>
           </div>
         </div>
       )}
@@ -103,7 +95,7 @@ export default function ParceriaIdentificationLabel({
             <h2 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">Cidade / Destino</h2>
             <h1 className="text-5xl font-black uppercase leading-tight mb-2">{data.cidade || 'N/A'}</h1>
             <div className="flex items-center gap-2 text-2xl font-bold bg-gray-100 w-fit px-3 py-1 rounded">
-              <Calendar className="h-6 w-6" />
+              <Calendar className="h-6 x-6" />
               <span>DATA ENTREGA: {data.dataEntrega || '-'}</span>
             </div>
           </div>

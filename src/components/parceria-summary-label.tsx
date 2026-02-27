@@ -1,6 +1,7 @@
+
 "use client";
 
-import { Printer, X, FileText } from "lucide-react";
+import { X, FileText } from "lucide-react";
 import { Button } from "./ui/button";
 import { cn } from "@/lib/utils";
 
@@ -22,10 +23,6 @@ export default function ParceriaSummaryLabel({
   hub 
 }: ParceriaSummaryLabelProps) {
   
-  const handlePrint = () => {
-    window.print();
-  };
-
   const totalQtd = items.reduce((acc, item) => acc + item.qtd, 0);
 
   return (
@@ -40,11 +37,6 @@ export default function ParceriaSummaryLabel({
           )}
           <span className="text-sm font-bold uppercase text-primary">Resumo Geral de Itens</span>
         </div>
-        
-        <Button onClick={handlePrint} style={{ backgroundColor: '#D40511' }}>
-          <Printer className="mr-2 h-4 w-4" />
-          Imprimir Resumo A4
-        </Button>
       </div>
 
       <div className="printable-area bg-white border shadow-sm print:shadow-none print:border-none flex flex-col font-sans" 

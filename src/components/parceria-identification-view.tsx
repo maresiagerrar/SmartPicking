@@ -5,7 +5,7 @@ import { useState, useRef, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { FileSpreadsheet, CheckCircle2, Loader2, Printer, Search, X, Table as TableIcon, FileDown, Download, FileText } from 'lucide-react';
+import { FileSpreadsheet, CheckCircle2, Loader2, Search, Table as TableIcon, FileDown, Download, FileText } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Progress } from '@/components/ui/progress';
@@ -204,15 +204,6 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
     setSelectedItem(filteredData[nextIndex]);
   };
 
-  const handleBulkPrint = () => {
-    if (filteredData.length === 0) return;
-    setIsBulkPrinting(true);
-    setTimeout(() => {
-      window.print();
-      setIsBulkPrinting(false);
-    }, 500);
-  };
-
   const downloadDirectPDF = async () => {
     if (filteredData.length === 0) return;
     
@@ -350,10 +341,6 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
               <Button onClick={downloadDirectPDF} className="bg-primary hover:bg-primary/90">
                 <Download className="mr-2 h-4 w-4" />
                 Baixar PDF
-              </Button>
-              <Button onClick={handleBulkPrint} variant="outline">
-                <Printer className="mr-2 h-4 w-4" />
-                Imprimir
               </Button>
               <Input 
                 placeholder="Filtrar CE ou Cidade..." 
