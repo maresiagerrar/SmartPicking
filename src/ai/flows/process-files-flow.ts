@@ -74,9 +74,6 @@ function parseTxtFile(txtContent: string): TxtData[] {
         const brMatch = line.match(/BR\d+/i);
         if (brMatch) currentBr = brMatch[0].toUpperCase();
 
-        // Regex atualizado para capturar "Linha : ON1 1 P"
-        // Grupo 1: (\w+) -> ON1
-        // Grupo 2: (\d+) -> 1
         const ordemMatch = line.match(/Linha\s*[:\.]?\s*(\w+)?\s+(\d+)/i);
         if (ordemMatch) {
             if (ordemMatch[1] && ordemMatch[2]) {
@@ -125,7 +122,7 @@ function parseExcelFile(excelContent: string): ExcelData[] {
           const skuM = row[12];
           const cidadeColumn = row[10];
           const clienteColumn = row[11];
-          const linhaColumn = row[19]; // Coluna T
+          const linhaColumn = row[19];
     
           if (remessa !== null && (cidadeColumn || clienteColumn)) {
             const sku = skuM || skuI || skuH; 
@@ -150,12 +147,32 @@ function parseShipTracker(content: string): Map<string, string> {
         const workbook = xlsx.read(Buffer.from(content, 'base64'), { type: 'buffer' });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
-        const jsonSheet = xlsx.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: null });
+        const jsonSheet = xlsx.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: null }) as any[][];
+
+        if (jsonSheet.length === 0) return mapping;
+
+        const headerRow = jsonSheet[0];
+        let colFornecimento = -1;
+        let colNotaFiscal = -1;
+
+        headerRow.forEach((cell, idx) => {
+            const val = String(cell || '').toUpperCase();
+            if (val.includes('FORNECIMENTO') || val.includes('REMESSA')) {
+                colFornecimento = idx;
+            }
+            if (val.includes('NOTA FISCAL') || val.includes('NF-E') || val.includes('NUMBER')) {
+                colNotaFiscal = idx;
+            }
+        });
+
+        // Fallback para índices padrão se os cabeçalhos não forem encontrados
+        if (colFornecimento === -1) colFornecimento = 1; // B
+        if (colNotaFiscal === -1) colNotaFiscal = 6;    // G
 
         jsonSheet.forEach((row: any, index: number) => {
             if (index === 0) return; // Header
-            const remessa = row[1]; // Coluna B (Fornecimento)
-            const notaFiscal = row[6]; // Coluna G (Nota Fiscal Number)
+            const remessa = row[colFornecimento];
+            const notaFiscal = row[colNotaFiscal];
             if (remessa && notaFiscal) {
                 mapping.set(normalizeRemessa(String(remessa)), String(notaFiscal).trim());
             }
@@ -188,7 +205,6 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
     const excelDataRaw = parseExcelFile(input.excelContent);
     const shipTrackerMap = input.shipTrackerContent ? parseShipTracker(input.shipTrackerContent) : new Map<string, string>();
     
-    // Consolidação de remessas do TXT
     const aggregatedTxtMap = new Map<string, TxtData>();
     txtDataRaw.forEach(item => {
         const normRem = normalizeRemessa(item.remessa);
@@ -203,7 +219,6 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
 
     const parceriaSkuSet = new Set(parceriaBrutaData.map(item => item.sku));
     
-    // Agrupa dados do Excel por remessa normalizada
     const excelDataMap = new Map<string, ExcelData[]>();
     excelDataRaw.forEach(item => {
         const normRem = normalizeRemessa(item.remessa);
@@ -239,9 +254,10 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
       const qtdEtiquetasBase = txtItem.qtdEtiqueta > 0 ? txtItem.qtdEtiqueta : 0;
       const totalEtiquetasRemessa = qtdEtiquetasBase + parceriaItems.length;
       const totalEtiquetasRemessaString = String(totalEtiquetasRemessa).padStart(2, '0');
+      
+      // Busca a Nota Fiscal no Map do ShipTracker
       const notaFiscal = shipTrackerMap.get(normRem);
       
-      // Prioriza a linha do TXT, se não houver usa a do Excel
       const linhaInfo = txtItem.linha || (excelItems.length > 0 ? excelItems[0].linha : undefined);
       
       let currentCaixaCounter = 1;
