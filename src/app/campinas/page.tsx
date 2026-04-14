@@ -1,7 +1,11 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Header from "@/components/layout/header";
-import HubProcessingView from "@/components/hub-processing-view";
+
+const HubProcessingView = dynamic(() => import("@/components/hub-processing-view"), {
+  ssr: false,
+});
 
 export default function CampinasPage() {
   return (
