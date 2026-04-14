@@ -1,0 +1,157 @@
+
+"use client";
+
+import { useState, useRef, type ChangeEvent, type DragEvent } from 'react';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { FileText, FileSpreadsheet, CheckCircle2, Loader2, Truck } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { useToast } from "@/hooks/use-toast";
+
+interface FileUploadCardProps {
+  onProcess: (txtFile: File, excelFile: File, shipTrackerFile?: File) => void;
+  isLoading: boolean;
+  hub: 'campinas' | 'contagem';
+}
+
+interface FileUploadAreaProps {
+  icon: React.ReactNode;
+  title: string;
+  acceptedFiles: string;
+  file: File | null;
+  setFile: (file: File | null) => void;
+  id: string;
+}
+
+function FileUploadArea({ icon, title, acceptedFiles, file, setFile, id }: FileUploadAreaProps) {
+  const [isDragging, setIsDragging] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+
+  const handleFileChange = (files: FileList | null) => {
+    if (files && files.length > 0) {
+      const selectedFile = files[0];
+      const fileExtension = "." + selectedFile.name.split('.').pop()?.toLowerCase();
+      if (!acceptedFiles.split(',').includes(fileExtension!)) {
+        toast({
+          title: "Tipo de arquivo inválido",
+          description: `Por favor, selecione um arquivo do tipo: ${acceptedFiles}`,
+          variant: "destructive",
+        });
+        return;
+      }
+      setFile(selectedFile);
+    }
+  };
+
+  const handleDragEnter = (e: DragEvent<HTMLDivElement>) => { e.preventDefault(); e.stopPropagation(); setIsDragging(true); };
+  const handleDragLeave = (e: DragEvent<HTMLDivElement>) => { e.preventDefault(); e.stopPropagation(); setIsDragging(false); };
+  const handleDragOver = (e: DragEvent<HTMLDivElement>) => { e.preventDefault(); e.stopPropagation(); };
+  const handleDrop = (e: DragEvent<HTMLDivElement>) => { e.preventDefault(); e.stopPropagation(); setIsDragging(false); handleFileChange(e.dataTransfer.files); };
+  
+  return (
+    <div
+      className={cn(
+        "relative flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg cursor-pointer transition-colors duration-300",
+        isDragging ? "border-primary bg-primary/10" : "border-border hover:border-primary/50 hover:bg-muted/50",
+        file && "border-green-500 bg-green-500/10"
+      )}
+      onClick={() => inputRef.current?.click()}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
+      <Input
+        ref={inputRef}
+        type="file"
+        id={id}
+        className="hidden"
+        accept={acceptedFiles}
+        onChange={(e: ChangeEvent<HTMLInputElement>) => handleFileChange(e.target.files)}
+      />
+      {file ? (
+        <div className="text-center text-green-700 dark:text-green-400">
+          <CheckCircle2 className="w-12 h-12 mx-auto" />
+          <p className="mt-2 font-semibold text-lg">{title}</p>
+          <p className="text-sm font-medium truncate max-w-[200px]">{file.name}</p>
+          <Button variant="link" size="sm" className="mt-2 text-green-700 dark:text-green-400" onClick={(e) => { e.stopPropagation(); setFile(null)}}>Remover</Button>
+        </div>
+      ) : (
+        <div className="text-center text-muted-foreground flex flex-col items-center">
+          {icon}
+          <p className="mt-4 font-semibold text-lg">{title}</p>
+          <p className="text-sm mt-1">Arraste e solte ou clique para selecionar</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function FileUploadCard({ onProcess, isLoading, hub }: FileUploadCardProps) {
+  const [txtFile, setTxtFile] = useState<File | null>(null);
+  const [excelFile, setExcelFile] = useState<File | null>(null);
+  const [shipTrackerFile, setShipTrackerFile] = useState<File | null>(null);
+  const { toast } = useToast();
+
+  const handleProcessClick = () => {
+    if (!txtFile || !excelFile) {
+       toast({
+        title: "Arquivos Faltando",
+        description: "Por favor, faça o upload dos arquivos obrigatórios (TARJA e VL06O).",
+        variant: "destructive",
+      });
+      return;
+    }
+    onProcess(txtFile, excelFile, shipTrackerFile || undefined);
+  };
+
+  return (
+    <Card className="w-full animate-fade-in-up shadow-lg">
+      <CardHeader>
+        <CardTitle className="font-headline text-2xl">Faça upload dos arquivos</CardTitle>
+      </CardHeader>
+      <CardContent className={cn("grid gap-6", hub === 'contagem' ? "md:grid-cols-3" : "md:grid-cols-2")}>
+        <FileUploadArea
+          id="txt-upload"
+          icon={<FileText className="w-12 h-12 mx-auto" style={{ color: '#FFCC00' }} />}
+          title="TARJA"
+          acceptedFiles=".txt,.pdf"
+          file={txtFile}
+          setFile={setTxtFile}
+        />
+        <FileUploadArea
+          id="excel-upload"
+          icon={<FileSpreadsheet className="w-12 h-12 mx-auto" style={{ color: '#FFCC00' }} />}
+          title="VL06O"
+          acceptedFiles=".xlsx,.xlsm"
+          file={excelFile}
+          setFile={setExcelFile}
+        />
+        {hub === 'contagem' && (
+          <FileUploadArea
+            id="ship-tracker-upload"
+            icon={<Truck className="w-12 h-12 mx-auto" style={{ color: '#FFCC00' }} />}
+            title="SHIP TRACKER"
+            acceptedFiles=".xlsx,.xlsm"
+            file={shipTrackerFile}
+            setFile={setShipTrackerFile}
+          />
+        )}
+      </CardContent>
+      <CardFooter>
+        <Button onClick={handleProcessClick} disabled={isLoading || !txtFile || !excelFile} className="w-full md:w-auto ml-auto" size="lg" style={{ backgroundColor: '#D40511' }}>
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Processando...
+            </>
+          ) : (
+            'Processar Arquivos'
+          )}
+        </Button>
+      </CardFooter>
+    </Card>
+  );
+}
