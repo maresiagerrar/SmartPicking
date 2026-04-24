@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useRef, useMemo } from 'react';
@@ -7,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FileSpreadsheet, CheckCircle2, Loader2, Search, Table as TableIcon, FileDown, Download, FileText } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from "@/hooks/use-toast";
 import * as xlsx from 'xlsx';
@@ -351,33 +350,36 @@ export default function ParceriaIdentificationView({ hub }: ParceriaIdentificati
             </div>
           </CardHeader>
           <CardContent>
-            <ScrollArea className="h-[450px] border rounded-md">
-              <Table>
-                <TableHeader className="sticky top-0 bg-card z-10 shadow-sm">
-                  <TableRow>
-                    <TableHead>CE (R)</TableHead>
-                    <TableHead>Data Picking (B)</TableHead>
-                    <TableHead>Cidade</TableHead>
-                    <TableHead className="text-center">Qtd Itens</TableHead>
-                    <TableHead className="text-right">Ação</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredData.map((item, idx) => (
-                    <TableRow key={idx} className="hover:bg-muted/50">
-                      <TableCell className="font-mono font-bold">{item.fornecimento}</TableCell>
-                      <TableCell>{item.dataEntrega}</TableCell>
-                      <TableCell className="font-medium">{item.cidade}</TableCell>
-                      <TableCell className="text-center font-bold text-primary">{item.items.length}</TableCell>
-                      <TableCell className="text-right">
-                        <Button size="sm" variant="outline" onClick={() => setSelectedItem(item)}>
-                          Visualizar
-                        </Button>
-                      </TableCell>
+            <ScrollArea className="h-[450px] border rounded-md w-full">
+              <div className="min-w-full inline-block align-middle">
+                <Table className="min-w-[800px]">
+                  <TableHeader className="sticky top-0 bg-card z-10 shadow-sm">
+                    <TableRow>
+                      <TableHead>CE (R)</TableHead>
+                      <TableHead>Data Picking (B)</TableHead>
+                      <TableHead>Cidade</TableHead>
+                      <TableHead className="text-center">Qtd Itens</TableHead>
+                      <TableHead className="text-right">Ação</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredData.map((item, idx) => (
+                      <TableRow key={idx} className="hover:bg-muted/50">
+                        <TableCell className="font-mono font-bold">{item.fornecimento}</TableCell>
+                        <TableCell>{item.dataEntrega}</TableCell>
+                        <TableCell className="font-medium">{item.cidade}</TableCell>
+                        <TableCell className="text-center font-bold text-primary">{item.items.length}</TableCell>
+                        <TableCell className="text-right">
+                          <Button size="sm" variant="outline" onClick={() => setSelectedItem(item)}>
+                            Visualizar
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              <ScrollBar orientation="horizontal" />
             </ScrollArea>
           </CardContent>
         </Card>

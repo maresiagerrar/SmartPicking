@@ -1,11 +1,10 @@
-
 "use client";
 
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Trash2, PlusCircle, FileDown } from 'lucide-react';
 import * as xlsx from 'xlsx';
@@ -174,57 +173,60 @@ export default function ParceriaBrutaPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <ScrollArea className="border rounded-md h-[600px]">
-              <Table>
-                <TableHeader className="sticky top-0 bg-card z-10 shadow-sm">
-                  <TableRow>
-                    <TableHead className="w-[150px]">SKU</TableHead>
-                    <TableHead>MATERIAL</TableHead>
-                    <TableHead className="w-[100px] text-right">AÇÕES</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredData.length > 0 ? (
-                    filteredData.map((row) => (
-                      <TableRow key={row.sku}>
-                        <TableCell className="font-medium">{row.sku}</TableCell>
-                        <TableCell>{row.material}</TableCell>
-                        <TableCell className="text-right">
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="destructive-ghost" size="icon">
-                                <Trash2 className="h-4 w-4" />
-                                <span className="sr-only">Excluir</span>
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Essa ação não pode ser desfeita. Isso excluirá permanentemente o item
-                                  <span className="font-bold"> {row.sku} - {row.material}</span>.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDeleteItem(row.sku)}>
-                                  Sim, Excluir
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
+            <ScrollArea className="border rounded-md h-[600px] w-full">
+              <div className="min-w-full inline-block align-middle">
+                <Table className="min-w-[600px]">
+                  <TableHeader className="sticky top-0 bg-card z-10 shadow-sm">
+                    <TableRow>
+                      <TableHead className="w-[150px]">SKU</TableHead>
+                      <TableHead>MATERIAL</TableHead>
+                      <TableHead className="w-[100px] text-right">AÇÕES</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredData.length > 0 ? (
+                      filteredData.map((row) => (
+                        <TableRow key={row.sku}>
+                          <TableCell className="font-medium">{row.sku}</TableCell>
+                          <TableCell>{row.material}</TableCell>
+                          <TableCell className="text-right">
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="destructive-ghost" size="icon">
+                                  <Trash2 className="h-4 w-4" />
+                                  <span className="sr-only">Excluir</span>
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Essa ação não pode ser desfeita. Isso excluirá permanentemente o item
+                                    <span className="font-bold"> {row.sku} - {row.material}</span>.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDeleteItem(row.sku)}>
+                                    Sim, Excluir
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={3} className="text-center h-24 text-muted-foreground">
+                          Nenhum resultado encontrado.
                         </TableCell>
                       </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={3} className="text-center h-24 text-muted-foreground">
-                        Nenhum resultado encontrado.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+              <ScrollBar orientation="horizontal" />
             </ScrollArea>
           </CardContent>
         </Card>
