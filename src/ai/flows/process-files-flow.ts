@@ -1,6 +1,7 @@
+
 'use server';
 /**
- * @fileOverview Processes uploaded text and Excel files to extract structured data.
+ * @fileOverview Processes uploaded text (TXT/PDF) and Excel files to extract structured data.
  *
  * - processFiles - A function that handles the file processing logic.
  * - ProcessFilesInput - The input type for the processFiles function.
@@ -13,7 +14,7 @@ import { DataRow } from '@/lib/types';
 import { parceriaBrutaData } from '@/lib/parceria-bruta-data';
 
 const ProcessFilesInputSchema = z.object({
-  txtContent: z.string().describe('The content of the uploaded TXT file.'),
+  txtContent: z.string().describe('The content of the uploaded TXT or PDF file (converted to text).'),
   excelContent: z.string().describe('The Base64 encoded content of the uploaded Excel file.'),
   shipTrackerContent: z.string().optional().describe('The Base64 encoded content of the Ship Tracker Excel file.'),
   hub: z.enum(['campinas', 'contagem']).optional().default('campinas'),
@@ -32,6 +33,7 @@ const DataRowSchema = z.object({
   parceria: z.string(),
   linha: z.string().optional(),
   notaFiscal: z.string().optional(),
+  totalRemessasCarro: z.number().optional(),
 });
 
 const ProcessFilesOutputSchema = z.object({
@@ -40,7 +42,7 @@ const ProcessFilesOutputSchema = z.object({
 });
 export type ProcessFilesOutput = z.infer<typeof ProcessFilesOutputSchema>;
 
-type TxtData = Omit<DataRow, 'cidade' | 'cliente' | 'nCaixas' | 'parceria' | 'notaFiscal'> & { qtdEtiqueta: number };
+type TxtData = Omit<DataRow, 'cidade' | 'cliente' | 'nCaixas' | 'parceria' | 'notaFiscal' | 'totalRemessasCarro'> & { qtdEtiqueta: number };
 type ExcelData = Pick<DataRow, 'remessa' | 'cidade' | 'cliente'> & { sku: string; linha?: string };
 
 /**
@@ -165,12 +167,11 @@ function parseShipTracker(content: string): Map<string, string> {
             }
         });
 
-        // Fallback para índices padrão se os cabeçalhos não forem encontrados
-        if (colFornecimento === -1) colFornecimento = 1; // B
-        if (colNotaFiscal === -1) colNotaFiscal = 6;    // G
+        if (colFornecimento === -1) colFornecimento = 1;
+        if (colNotaFiscal === -1) colNotaFiscal = 6;
 
         jsonSheet.forEach((row: any, index: number) => {
-            if (index === 0) return; // Header
+            if (index === 0) return;
             const remessa = row[colFornecimento];
             const notaFiscal = row[colNotaFiscal];
             if (remessa && notaFiscal) {
@@ -194,6 +195,7 @@ function insertAttentionRows(data: DataRow[]): DataRow[] {
                 remessa: '', data: '', br: 'ATENÇÃO', cidade: '',
                 cliente: `PROXIMO ${nextBr}`,
                 ordem: '', qtdEtiqueta: '', nCaixas: '', parceria: '',
+                totalRemessasCarro: 0,
             });
         }
     }
@@ -255,9 +257,7 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
       const totalEtiquetasRemessa = qtdEtiquetasBase + parceriaItems.length;
       const totalEtiquetasRemessaString = String(totalEtiquetasRemessa).padStart(2, '0');
       
-      // Busca a Nota Fiscal no Map do ShipTracker
       const notaFiscal = shipTrackerMap.get(normRem);
-      
       const linhaInfo = txtItem.linha || (excelItems.length > 0 ? excelItems[0].linha : undefined);
       
       let currentCaixaCounter = 1;
@@ -300,8 +300,30 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
       });
     });
 
+    const brRemessaMap = new Map<string, Set<string>>();
+    const allProcessedRows = [...tempMainData, ...tempParceriaData];
+    
+    allProcessedRows.forEach(row => {
+        if (!brRemessaMap.has(row.br)) {
+            brRemessaMap.set(row.br, new Set());
+        }
+        if (row.remessa) {
+            brRemessaMap.get(row.br)!.add(row.remessa);
+        }
+    });
+
+    const updateWithTotals = (rows: DataRow[]) => {
+        return rows.map(row => ({
+            ...row,
+            totalRemessasCarro: brRemessaMap.get(row.br)?.size || 0
+        }));
+    };
+
+    const finalMain = updateWithTotals(tempMainData);
+    const finalParceria = updateWithTotals(tempParceriaData);
+
     return { 
-        mainData: insertAttentionRows(tempMainData), 
-        parceriaData: insertAttentionRows(tempParceriaData) 
+        mainData: insertAttentionRows(finalMain), 
+        parceriaData: insertAttentionRows(finalParceria) 
     };
 }

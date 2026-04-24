@@ -1,3 +1,4 @@
+
 "use client";
 import { useState, useMemo, KeyboardEvent, useEffect } from 'react';
 import type { DataRow } from '@/lib/types';
@@ -146,7 +147,7 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
   const handleExport = () => {
     const header = [
       "REMESSA", "DATA", "BR", "CIDADE", "CLIENTE",
-      "ORDEM", "QTD ETIQUETA", "Nº CAIXAS", "PARCERIA", "LINHA", "NOTA FISCAL"
+      "ORDEM", "QTD ETIQUETA", "Nº CAIXAS", "PARCERIA", "LINHA", "NOTA FISCAL", "TOTAL REMESSAS/CARRO"
     ];
 
     const createSheetBody = (sheetData: DataRow[]) => sheetData.map(row => ({
@@ -160,7 +161,8 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
       "Nº CAIXAS": row.nCaixas,
       "PARCERIA": (row.parceria !== 'Não' && row.parceria !== '') ? row.parceria : '',
       "LINHA": row.linha || '',
-      "NOTA FISCAL": row.notaFiscal || ''
+      "NOTA FISCAL": row.notaFiscal || '',
+      "TOTAL REMESSAS/CARRO": row.totalRemessasCarro || 0
     }));
 
     const autoSizeColumns = (worksheet: xlsx.WorkSheet, body: any[]) => {
@@ -278,6 +280,7 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
                   <TableHead><HeaderCell column="remessa" label="REMESSA"/></TableHead>
                   <TableHead><HeaderCell column="data" label="DATA"/></TableHead>
                   <TableHead><HeaderCell column="br" label="BR" /></TableHead>
+                  <TableHead><HeaderCell column="totalRemessasCarro" label="TOTAL REMESSAS/CARRO" /></TableHead>
                   <TableHead><HeaderCell column="cidade" label="CIDADE"/></TableHead>
                   <TableHead><HeaderCell column="cliente" label="CLIENTE"/></TableHead>
                   <TableHead><HeaderCell column="ordem" label="ORDEM"/></TableHead>
@@ -305,6 +308,9 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
                       <TableCell>{row.remessa}</TableCell>
                       <TableCell>{row.data}</TableCell>
                       <TableCell>{row.br}</TableCell>
+                      <TableCell className="text-center">
+                        {row.br === 'ATENÇÃO' ? '' : row.totalRemessasCarro}
+                      </TableCell>
                       <TableCell>{row.cidade}</TableCell>
                       <TableCell>{row.cliente}</TableCell>
                       <TableCell>{row.ordem}</TableCell>
@@ -335,7 +341,7 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
                   )})
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={12} className="text-center h-24 text-muted-foreground">
+                    <TableCell colSpan={13} className="text-center h-24 text-muted-foreground">
                       Nenhum resultado encontrado.
                     </TableCell>
                   </TableRow>

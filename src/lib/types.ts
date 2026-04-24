@@ -11,6 +11,7 @@ export type DataRow = {
   parceria: string;
   linha?: string;
   notaFiscal?: string;
+  totalRemessasCarro?: number;
 };
 
 export type ParceriaBrutaDataRow = {
