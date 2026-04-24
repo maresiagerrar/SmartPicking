@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { RotateCcw, X, ChevronDown, ArrowUp, ArrowDown, FileDown, Printer, Eye, ArrowUpDown } from 'lucide-react';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -200,7 +200,7 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
     useEffect(() => { setInputValue(filters[column] || ''); }, [filters, column]);
 
     return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2 whitespace-nowrap">
         <span className="font-semibold">{label}</span>
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -236,9 +236,9 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
   )};
 
   return (
-    <Card className="animate-fade-in shadow-lg">
+    <Card className="animate-fade-in shadow-lg overflow-hidden">
       <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 non-printable">
-        <div className='flex items-center gap-4'>
+        <div className='flex items-center gap-4 flex-wrap'>
            <CardTitle className="font-headline text-2xl">Dados da Etiqueta</CardTitle>
             <span className="text-sm font-medium text-muted-foreground">
                 ({labelCount} {labelCount === 1 ? 'etiqueta' : 'etiquetas'})
@@ -248,7 +248,7 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
             <Label htmlFor="parceria-switch" variant="toggle">Parceria Bruta</Label>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
             <Button onClick={() => setIsReversed(prev => !prev)} size="sm" variant="outline">
               <ArrowUpDown className="mr-2 h-4 w-4" />
               Inverter Ordem
@@ -271,83 +271,86 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
             </Button>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-0 sm:p-6">
         <div className="printable-area">
-          <ScrollArea className="border rounded-md h-[500px]">
-            <Table>
-              <TableHeader className="sticky top-0 bg-card z-10 shadow-sm">
-                <TableRow>
-                  <TableHead><HeaderCell column="remessa" label="REMESSA"/></TableHead>
-                  <TableHead><HeaderCell column="data" label="DATA"/></TableHead>
-                  <TableHead><HeaderCell column="br" label="BR" /></TableHead>
-                  <TableHead><HeaderCell column="totalRemessasCarro" label="TOTAL REMESSAS/CARRO" /></TableHead>
-                  <TableHead><HeaderCell column="cidade" label="CIDADE"/></TableHead>
-                  <TableHead><HeaderCell column="cliente" label="CLIENTE"/></TableHead>
-                  <TableHead><HeaderCell column="ordem" label="ORDEM"/></TableHead>
-                  <TableHead><HeaderCell column="qtdEtiqueta" label="QTD ETIQUETA"/></TableHead>
-                  <TableHead><HeaderCell column="nCaixas" label="Nº CAIXAS"/></TableHead>
-                  {hasNotaFiscal && <TableHead><HeaderCell column="notaFiscal" label="NOTA FISCAL"/></TableHead>}
-                  <TableHead><HeaderCell column="linha" label="LINHA"/></TableHead>
-                  <TableHead><HeaderCell column="parceria" label="PARCERIA"/></TableHead>
-                  <TableHead className="non-printable">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {sortedAndFilteredData.length > 0 ? (
-                  sortedAndFilteredData.map((row, index) => {
-                    const isParceria = row.parceria !== 'Não' && row.parceria !== '';
-                    return (
-                    <TableRow 
-                      key={index} 
-                      className={cn(
-                        "hover:bg-muted/50",
-                        row.br === 'ATENÇÃO' && 'bg-yellow-200/50 dark:bg-yellow-800/50 font-bold',
-                        printedRows.has(getRowId(row)) && 'bg-gray-200 dark:bg-gray-700 opacity-60'
-                      )}
-                    >
-                      <TableCell>{row.remessa}</TableCell>
-                      <TableCell>{row.data}</TableCell>
-                      <TableCell>{row.br}</TableCell>
-                      <TableCell className="text-center">
-                        {row.br === 'ATENÇÃO' ? '' : row.totalRemessasCarro}
-                      </TableCell>
-                      <TableCell>{row.cidade}</TableCell>
-                      <TableCell>{row.cliente}</TableCell>
-                      <TableCell>{row.ordem}</TableCell>
-                      <TableCell className="text-center">
-                        {row.br === 'ATENÇÃO' ? '' : String(row.qtdEtiqueta).padStart(2, '0')}
-                      </TableCell>
-                      <TableCell className="text-center">{row.nCaixas}</TableCell>
-                      {hasNotaFiscal && <TableCell>{row.notaFiscal || ''}</TableCell>}
-                      <TableCell>{row.linha || ''}</TableCell>
-                      <TableCell>
-                         <span className={cn(
-                            "px-2 py-1 rounded-full text-xs font-medium",
-                             isParceria && 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
-                             row.br === 'ATENÇÃO' && 'opacity-0'
-                         )}>
-                            {isParceria ? row.parceria : ''}
-                         </span>
-                      </TableCell>
-                      <TableCell className="non-printable">
-                        {row.br !== 'ATENÇÃO' && (
-                          <Button variant="outline" size="icon" onClick={() => setPreviewData(row)}>
-                             <Eye className="h-4 w-4" />
-                             <span className="sr-only">Visualizar Etiqueta</span>
-                          </Button>
+          <ScrollArea className="border rounded-md h-[600px] w-full">
+            <div className="min-w-full inline-block align-middle">
+              <Table className="min-w-[1500px]">
+                <TableHeader className="sticky top-0 bg-card z-10 shadow-sm">
+                  <TableRow>
+                    <TableHead className="w-[120px]"><HeaderCell column="remessa" label="REMESSA"/></TableHead>
+                    <TableHead className="w-[110px]"><HeaderCell column="data" label="DATA"/></TableHead>
+                    <TableHead className="w-[100px]"><HeaderCell column="br" label="BR" /></TableHead>
+                    <TableHead className="w-[180px] text-center"><HeaderCell column="totalRemessasCarro" label="TOTAL REMESSAS/CARRO" /></TableHead>
+                    <TableHead className="w-[150px]"><HeaderCell column="cidade" label="CIDADE"/></TableHead>
+                    <TableHead className="w-[300px]"><HeaderCell column="cliente" label="CLIENTE"/></TableHead>
+                    <TableHead className="w-[100px]"><HeaderCell column="ordem" label="ORDEM"/></TableHead>
+                    <TableHead className="w-[130px] text-center"><HeaderCell column="qtdEtiqueta" label="QTD ETIQUETA"/></TableHead>
+                    <TableHead className="w-[110px] text-center"><HeaderCell column="nCaixas" label="Nº CAIXAS"/></TableHead>
+                    {hasNotaFiscal && <TableHead className="w-[140px]"><HeaderCell column="notaFiscal" label="NOTA FISCAL"/></TableHead>}
+                    <TableHead className="w-[100px]"><HeaderCell column="linha" label="LINHA"/></TableHead>
+                    <TableHead className="w-[120px]"><HeaderCell column="parceria" label="PARCERIA"/></TableHead>
+                    <TableHead className="non-printable w-[80px]">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {sortedAndFilteredData.length > 0 ? (
+                    sortedAndFilteredData.map((row, index) => {
+                      const isParceria = row.parceria !== 'Não' && row.parceria !== '';
+                      return (
+                      <TableRow 
+                        key={index} 
+                        className={cn(
+                          "hover:bg-muted/50",
+                          row.br === 'ATENÇÃO' && 'bg-yellow-200/50 dark:bg-yellow-800/50 font-bold',
+                          printedRows.has(getRowId(row)) && 'bg-gray-200 dark:bg-gray-700 opacity-60'
                         )}
+                      >
+                        <TableCell className="font-medium">{row.remessa}</TableCell>
+                        <TableCell>{row.data}</TableCell>
+                        <TableCell>{row.br}</TableCell>
+                        <TableCell className="text-center">
+                          {row.br === 'ATENÇÃO' ? '' : row.totalRemessasCarro}
+                        </TableCell>
+                        <TableCell>{row.cidade}</TableCell>
+                        <TableCell className="max-w-[300px] truncate" title={row.cliente}>{row.cliente}</TableCell>
+                        <TableCell>{row.ordem}</TableCell>
+                        <TableCell className="text-center">
+                          {row.br === 'ATENÇÃO' ? '' : String(row.qtdEtiqueta).padStart(2, '0')}
+                        </TableCell>
+                        <TableCell className="text-center">{row.nCaixas}</TableCell>
+                        {hasNotaFiscal && <TableCell>{row.notaFiscal || ''}</TableCell>}
+                        <TableCell>{row.linha || ''}</TableCell>
+                        <TableCell>
+                           <span className={cn(
+                              "px-2 py-1 rounded-full text-xs font-medium",
+                               isParceria && 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+                               row.br === 'ATENÇÃO' && 'opacity-0'
+                           )}>
+                              {isParceria ? row.parceria : ''}
+                           </span>
+                        </TableCell>
+                        <TableCell className="non-printable">
+                          {row.br !== 'ATENÇÃO' && (
+                            <Button variant="outline" size="icon" onClick={() => setPreviewData(row)}>
+                               <Eye className="h-4 w-4" />
+                               <span className="sr-only">Visualizar Etiqueta</span>
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    )})
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={13} className="text-center h-24 text-muted-foreground">
+                        Nenhum resultado encontrado.
                       </TableCell>
                     </TableRow>
-                  )})
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={13} className="text-center h-24 text-muted-foreground">
-                      Nenhum resultado encontrado.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+            <ScrollBar orientation="horizontal" />
           </ScrollArea>
         </div>
         <Dialog open={!!previewData} onOpenChange={(isOpen) => !isOpen && setPreviewData(null)}>
