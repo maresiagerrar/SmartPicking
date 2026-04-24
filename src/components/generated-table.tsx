@@ -162,7 +162,7 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
       "PARCERIA": (row.parceria !== 'Não' && row.parceria !== '') ? row.parceria : '',
       "LINHA": row.linha || '',
       "NOTA FISCAL": row.notaFiscal || '',
-      "TOTAL REMESSAS/CARRO": row.totalRemessasCarro || 0
+      "TOTAL REMESSAS/CARRO": row.br === 'ATENÇÃO' ? '' : (row.totalRemessasCarro || 0)
     }));
 
     const autoSizeColumns = (worksheet: xlsx.WorkSheet, body: any[]) => {
