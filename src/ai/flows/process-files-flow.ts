@@ -34,6 +34,7 @@ const DataRowSchema = z.object({
   linha: z.string().optional(),
   notaFiscal: z.string().optional(),
   totalRemessasCarro: z.number().optional(),
+  groupId: z.number().optional(),
 });
 
 const ProcessFilesOutputSchema = z.object({
@@ -42,7 +43,7 @@ const ProcessFilesOutputSchema = z.object({
 });
 export type ProcessFilesOutput = z.infer<typeof ProcessFilesOutputSchema>;
 
-type TxtData = Omit<DataRow, 'cidade' | 'cliente' | 'nCaixas' | 'parceria' | 'notaFiscal' | 'totalRemessasCarro'> & { qtdEtiqueta: number };
+type TxtData = Omit<DataRow, 'cidade' | 'cliente' | 'nCaixas' | 'parceria' | 'notaFiscal' | 'totalRemessasCarro' | 'groupId'> & { qtdEtiqueta: number };
 type ExcelData = Pick<DataRow, 'remessa' | 'cidade' | 'cliente'> & { sku: string; linha?: string };
 
 /**
@@ -189,14 +190,22 @@ function insertAttentionRows(data: DataRow[]): DataRow[] {
     const result: DataRow[] = [];
     for (let i = 0; i < data.length; i++) {
         result.push(data[i]);
-        const nextBr = data[i + 1]?.br;
-        if (nextBr && nextBr.trim() !== '' && nextBr !== 'ATENÇÃO' && data[i].br !== nextBr) {
-             result.push({
-                remessa: '', data: '', br: 'ATENÇÃO', cidade: '',
-                cliente: `PROXIMO ${nextBr}`,
-                ordem: '', qtdEtiqueta: '', nCaixas: '', parceria: '',
-                totalRemessasCarro: 0,
-            });
+        const current = data[i];
+        const next = data[i + 1];
+        
+        if (next && next.br !== 'ATENÇÃO') {
+            const brChanged = next.br && next.br.trim() !== '' && current.br !== next.br;
+            const groupChanged = current.groupId !== undefined && next.groupId !== undefined && current.groupId !== next.groupId;
+            
+            if (brChanged || groupChanged) {
+                 result.push({
+                    remessa: '', data: '', br: 'ATENÇÃO', cidade: '',
+                    cliente: brChanged ? `PROXIMO ${next.br}` : `PROXIMO CARREGAMENTO`,
+                    ordem: '', qtdEtiqueta: '', nCaixas: '', parceria: '',
+                    totalRemessasCarro: 0,
+                    groupId: -1
+                });
+            }
         }
     }
     return result;
@@ -207,6 +216,35 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
     const excelDataRaw = parseExcelFile(input.excelContent);
     const shipTrackerMap = input.shipTrackerContent ? parseShipTracker(input.shipTrackerContent) : new Map<string, string>();
     
+    // Identificar grupos de carregamento (Carros) baseados na ORDEM e BR
+    let currentGroupId = 0;
+    let lastOrdem = -1;
+    let lastBr = "";
+    const remessaToGroupId = new Map<string, number>();
+    const groupUniqueRemessas = new Map<number, Set<string>>();
+
+    txtDataRaw.forEach((item) => {
+        const ordemVal = parseInt(item.ordem, 10) || 0;
+        const normRem = normalizeRemessa(item.remessa);
+
+        // Detectar quebra de carregamento: BR mudou, ou ORDEM reiniciou em 1, ou ORDEM diminuiu
+        if (item.br !== lastBr || ordemVal === 1 || (lastOrdem !== -1 && ordemVal < lastOrdem)) {
+            currentGroupId++;
+        }
+
+        if (!remessaToGroupId.has(normRem)) {
+            remessaToGroupId.set(normRem, currentGroupId);
+        }
+
+        if (!groupUniqueRemessas.has(currentGroupId)) {
+            groupUniqueRemessas.set(currentGroupId, new Set());
+        }
+        groupUniqueRemessas.get(currentGroupId)!.add(normRem);
+
+        lastOrdem = ordemVal;
+        lastBr = item.br;
+    });
+
     const aggregatedTxtMap = new Map<string, TxtData>();
     txtDataRaw.forEach(item => {
         const normRem = normalizeRemessa(item.remessa);
@@ -300,23 +338,15 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
       });
     });
 
-    const brRemessaMap = new Map<string, Set<string>>();
-    const allProcessedRows = [...tempMainData, ...tempParceriaData];
-    
-    allProcessedRows.forEach(row => {
-        if (!brRemessaMap.has(row.br)) {
-            brRemessaMap.set(row.br, new Set());
-        }
-        if (row.remessa) {
-            brRemessaMap.get(row.br)!.add(row.remessa);
-        }
-    });
-
     const updateWithTotals = (rows: DataRow[]) => {
-        return rows.map(row => ({
-            ...row,
-            totalRemessasCarro: brRemessaMap.get(row.br)?.size || 0
-        }));
+        return rows.map(row => {
+            const gid = remessaToGroupId.get(normalizeRemessa(row.remessa));
+            return {
+                ...row,
+                groupId: gid,
+                totalRemessasCarro: gid !== undefined ? (groupUniqueRemessas.get(gid)?.size || 0) : 0
+            };
+        });
     };
 
     const finalMain = updateWithTotals(tempMainData);
