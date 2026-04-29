@@ -200,7 +200,7 @@ function insertAttentionRows(data: DataRow[]): DataRow[] {
             if (brChanged || groupChanged) {
                  result.push({
                     remessa: '', data: '', br: 'ATENÇÃO', cidade: '',
-                    cliente: brChanged ? `PROXIMO ${next.br}` : `PROXIMO CARREGAMENTO`,
+                    cliente: `PROXIMO ${next.br}`,
                     ordem: '', qtdEtiqueta: '', nCaixas: '', parceria: '',
                     totalRemessasCarro: 0,
                     groupId: -1
@@ -220,6 +220,8 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
     let currentGroupId = 0;
     let lastOrdem = -1;
     let lastBr = "";
+    let lastData = "";
+    let sequenceDirection: 'increasing' | 'decreasing' | 'unknown' = 'unknown';
     const remessaToGroupId = new Map<string, number>();
     const groupUniqueRemessas = new Map<number, Set<string>>();
 
@@ -227,9 +229,28 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
         const ordemVal = parseInt(item.ordem, 10) || 0;
         const normRem = normalizeRemessa(item.remessa);
 
-        // Detectar quebra de carregamento: BR mudou, ou ORDEM reiniciou em 1, ou ORDEM diminuiu
-        if (item.br !== lastBr || ordemVal === 1 || (lastOrdem !== -1 && ordemVal < lastOrdem)) {
+        let isBreak = false;
+
+        // Detectar quebra de carregamento: BR mudou, DATA mudou ou houve quebra na sequência esperada
+        if (item.br !== lastBr || (lastData !== "" && item.data !== lastData)) {
+            isBreak = true;
+        } else if (lastOrdem !== -1) {
+            if (sequenceDirection === 'increasing' && ordemVal < lastOrdem) {
+                isBreak = true;
+            } else if (sequenceDirection === 'decreasing' && ordemVal > lastOrdem) {
+                isBreak = true;
+            }
+        }
+
+        if (isBreak) {
             currentGroupId++;
+            sequenceDirection = 'unknown'; // Reseta a direção para o novo grupo
+        } else if (lastOrdem !== -1 && item.br === lastBr) {
+            // Atualiza a direção da sequência se estivermos no mesmo grupo e a direção for desconhecida
+            if (sequenceDirection === 'unknown') {
+                if (ordemVal > lastOrdem) sequenceDirection = 'increasing';
+                else if (ordemVal < lastOrdem) sequenceDirection = 'decreasing';
+            }
         }
 
         if (!remessaToGroupId.has(normRem)) {
@@ -243,6 +264,7 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
 
         lastOrdem = ordemVal;
         lastBr = item.br;
+        lastData = item.data;
     });
 
     const aggregatedTxtMap = new Map<string, TxtData>();
@@ -284,7 +306,7 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
     };
 
     const clienteMapping = hubMappings[input.hub || 'campinas'] || {};
-    const parceriaText = input.hub === 'contagem' ? 'ESTA REMESSA POSSUI PARCERIA' : 'Sim';
+    const parceriaText = 'ESTA REMESSA POSSUI PARCERIA';
 
     txtData.forEach((txtItem) => {
       const normRem = normalizeRemessa(txtItem.remessa);
