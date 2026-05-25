@@ -13,9 +13,15 @@ export type DataRow = {
   notaFiscal?: string;
   totalRemessasCarro?: number;
   groupId?: number;
+  leadTime?: string;
 };
 
 export type ParceriaBrutaDataRow = {
   sku: string;
   material: string;
+};
+
+export type BrLeadTimeDataRow = {
+  br: string;
+  leadTime: string;
 };

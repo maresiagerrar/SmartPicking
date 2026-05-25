@@ -144,9 +144,13 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
     return sortedAndFilteredData.some(row => row.notaFiscal);
   }, [sortedAndFilteredData]);
 
+  const hasLeadTime = useMemo(() => {
+    return sortedAndFilteredData.some(row => row.leadTime);
+  }, [sortedAndFilteredData]);
+
   const handleExport = () => {
     const header = [
-      "REMESSA", "DATA", "BR", "CIDADE", "CLIENTE",
+      "REMESSA", "DATA", "BR", "LEAD TIME", "CIDADE", "CLIENTE",
       "ORDEM", "QTD ETIQUETA", "Nº CAIXAS", "PARCERIA", "LINHA", "NOTA FISCAL", "TOTAL REMESSAS/CARRO"
     ];
 
@@ -154,6 +158,7 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
       "REMESSA": row.remessa,
       "DATA": row.data,
       "BR": row.br,
+      "LEAD TIME": row.br === 'ATENÇÃO' ? '' : (row.leadTime || ''),
       "CIDADE": row.cidade,
       "CLIENTE": row.cliente,
       "ORDEM": row.ordem,
@@ -281,6 +286,7 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
                     <TableHead className="w-[120px]"><HeaderCell column="remessa" label="REMESSA"/></TableHead>
                     <TableHead className="w-[110px]"><HeaderCell column="data" label="DATA"/></TableHead>
                     <TableHead className="w-[100px]"><HeaderCell column="br" label="BR" /></TableHead>
+                    {hasLeadTime && <TableHead className="w-[120px]"><HeaderCell column="leadTime" label="LEAD TIME"/></TableHead>}
                     <TableHead className="w-[180px] text-center"><HeaderCell column="totalRemessasCarro" label="TOTAL REMESSAS/CARRO" /></TableHead>
                     <TableHead className="w-[150px]"><HeaderCell column="cidade" label="CIDADE"/></TableHead>
                     <TableHead className="w-[300px]"><HeaderCell column="cliente" label="CLIENTE"/></TableHead>
@@ -296,19 +302,32 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
                 <TableBody>
                   {sortedAndFilteredData.length > 0 ? (
                     sortedAndFilteredData.map((row, index) => {
-                      const isParceria = row.parceria !== 'Não' && row.parceria !== '';
-                      return (
-                      <TableRow 
+                       const isParceria = row.parceria !== 'Não' && row.parceria !== '';
+                       return (
+                       <TableRow 
                         key={index} 
                         className={cn(
                           "hover:bg-muted/50",
                           row.br === 'ATENÇÃO' && 'bg-yellow-200/50 dark:bg-yellow-800/50 font-bold',
                           printedRows.has(getRowId(row)) && 'bg-gray-200 dark:bg-gray-700 opacity-60'
                         )}
-                      >
+                       >
                         <TableCell className="font-medium">{row.remessa}</TableCell>
                         <TableCell>{row.data}</TableCell>
                         <TableCell>{row.br}</TableCell>
+                        {hasLeadTime && (
+                          <TableCell>
+                            {row.br === 'ATENÇÃO' ? '' : (
+                              row.leadTime ? (
+                                <span className="px-2 py-0.5 rounded bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200 text-xs font-semibold">
+                                  {row.leadTime}
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground text-xs">—</span>
+                              )
+                            )}
+                          </TableCell>
+                        )}
                         <TableCell className="text-center">
                           {row.br === 'ATENÇÃO' ? '' : row.totalRemessasCarro}
                         </TableCell>
@@ -338,11 +357,11 @@ export default function GeneratedTable({ data, parceriaData, onReset }: Generate
                             </Button>
                           )}
                         </TableCell>
-                      </TableRow>
+                       </TableRow>
                     )})
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={13} className="text-center h-24 text-muted-foreground">
+                      <TableCell colSpan={12 + (hasNotaFiscal ? 1 : 0) + (hasLeadTime ? 1 : 0)} className="text-center h-24 text-muted-foreground">
                         Nenhum resultado encontrado.
                       </TableCell>
                     </TableRow>

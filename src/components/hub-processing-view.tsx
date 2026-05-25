@@ -9,10 +9,11 @@ import { processFiles } from "@/ai/flows/process-files-flow";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { ChevronLeft, Ticket, Search, ArrowRight } from "lucide-react";
+import { ChevronLeft, Ticket, Search, ArrowRight, Clock } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import ParceriaIdentificationView from "./parceria-identification-view";
+import { brLeadTimeData } from "@/lib/br-lead-time-data";
 
 interface HubProcessingViewProps {
   hub: 'campinas' | 'contagem';
@@ -59,8 +60,41 @@ export default function HubProcessingView({ hub }: HubProcessingViewProps) {
       });
       
       if (result && result.mainData && result.mainData.length > 0) {
-        setMainData(result.mainData);
-        setParceriaData(result.parceriaData);
+        let finalMain = result.mainData;
+        let finalParceria = result.parceriaData;
+
+        if (hub === 'contagem') {
+          let leadTimeList = brLeadTimeData;
+          if (typeof window !== 'undefined') {
+            const stored = localStorage.getItem('smartpicking_br_lead_time');
+            if (stored) {
+              try {
+                leadTimeList = JSON.parse(stored);
+              } catch (e) {
+                // Ignore e use a lista estática
+              }
+            }
+          }
+
+          const leadTimeMap = new Map(leadTimeList.map(item => [item.br.toUpperCase(), item.leadTime]));
+
+          const addLeadTime = (rows: DataRow[]) => {
+            return rows.map(row => {
+              if (row.br === 'ATENÇÃO') return row;
+              const lt = leadTimeMap.get(row.br.toUpperCase());
+              return {
+                ...row,
+                leadTime: lt || undefined
+              };
+            });
+          };
+
+          finalMain = addLeadTime(finalMain);
+          finalParceria = addLeadTime(finalParceria);
+        }
+
+        setMainData(finalMain);
+        setParceriaData(finalParceria);
       } else {
         toast({
           title: "Nenhum dado encontrado",

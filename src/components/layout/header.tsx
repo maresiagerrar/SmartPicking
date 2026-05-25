@@ -42,6 +42,12 @@ export default function Header() {
           </div>
         </div>
         <div className="flex items-center gap-4">
+          <Link href="/contagem/lead-time" passHref>
+             <Button variant="outline">
+                Lead Time BR
+                <ChevronsRight className="ml-2 h-4 w-4" />
+             </Button>
+          </Link>
           <Link href="/parceria-bruta" passHref>
              <Button variant="outline">
                 Parceria Bruta

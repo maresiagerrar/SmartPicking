@@ -110,7 +110,12 @@ export default function LabelPreview({ data, onClose, onNavigate, onPrint }: Lab
                   </div>
               </div>
               <div className="flex justify-between items-center mt-[-8px]">
-                  <span className="text-3xl font-bold">{data.br}</span>
+                  <div className="flex items-center gap-2">
+                      <span className="text-3xl font-bold">{data.br}</span>
+                      {data.leadTime && (
+                          <span className="text-xs font-bold border-2 border-black px-1.5 py-0.5 rounded uppercase tracking-wider whitespace-nowrap">{data.leadTime}</span>
+                      )}
+                  </div>
                   <div className="flex items-baseline gap-1 text-right">
                       <span className="text-sm font-semibold">CAIXAS:</span>
                       <span className="text-2xl font-bold">{data.nCaixas}</span>

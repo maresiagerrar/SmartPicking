@@ -224,6 +224,7 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
     let sequenceDirection: 'increasing' | 'decreasing' | 'unknown' = 'unknown';
     const remessaToGroupId = new Map<string, number>();
     const groupUniqueRemessas = new Map<number, Set<string>>();
+    const groupMaxOrdem = new Map<number, number>();
 
     txtDataRaw.forEach((item) => {
         const ordemVal = parseInt(item.ordem, 10) || 0;
@@ -261,6 +262,11 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
             groupUniqueRemessas.set(currentGroupId, new Set());
         }
         groupUniqueRemessas.get(currentGroupId)!.add(normRem);
+
+        const currentMax = groupMaxOrdem.get(currentGroupId) || 0;
+        if (ordemVal > currentMax) {
+            groupMaxOrdem.set(currentGroupId, ordemVal);
+        }
 
         lastOrdem = ordemVal;
         lastBr = item.br;
@@ -363,10 +369,18 @@ export async function processFiles(input: ProcessFilesInput): Promise<ProcessFil
     const updateWithTotals = (rows: DataRow[]) => {
         return rows.map(row => {
             const gid = remessaToGroupId.get(normalizeRemessa(row.remessa));
+            let total = 0;
+            if (gid !== undefined) {
+                if (input.hub === 'contagem') {
+                    total = groupMaxOrdem.get(gid) || 0;
+                } else {
+                    total = groupUniqueRemessas.get(gid)?.size || 0;
+                }
+            }
             return {
                 ...row,
                 groupId: gid,
-                totalRemessasCarro: gid !== undefined ? (groupUniqueRemessas.get(gid)?.size || 0) : 0
+                totalRemessasCarro: total
             };
         });
     };
